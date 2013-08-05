@@ -102,17 +102,17 @@
 class MEASAirspeed : public Airspeed
 {
 public:
-MEASAirspeed(int bus, int address = I2C_ADDRESS_MS4525DO);
+	MEASAirspeed(int bus, int address = I2C_ADDRESS_MS4525DO);
 
 protected:
 
-/**
-* Perform a poll cycle; collect from the previous measurement
-* and start a new one.
-*/
-virtual void	cycle();
-virtual int	measure();
-virtual int	collect();
+	/**
+	* Perform a poll cycle; collect from the previous measurement
+	* and start a new one.
+	*/
+	virtual void	cycle();
+	virtual int	measure();
+	virtual int	collect();
 
 };
 
@@ -122,7 +122,7 @@ virtual int	collect();
 extern "C" __EXPORT int meas_airspeed_main(int argc, char *argv[]);
 
 MEASAirspeed::MEASAirspeed(int bus, int address) : Airspeed(bus, address,
-CONVERSION_INTERVAL)
+			CONVERSION_INTERVAL)
 {
 
 }
@@ -130,139 +130,140 @@ CONVERSION_INTERVAL)
 int
 MEASAirspeed::measure()
 {
-int ret;
+	int ret;
 
-/*
-* Send the command to begin a measurement.
-*/
-uint8_t cmd = 0;
-ret = transfer(&cmd, 1, nullptr, 0);
+	/*
+	* Send the command to begin a measurement.
+	*/
+	uint8_t cmd = 0;
+	ret = transfer(&cmd, 1, nullptr, 0);
 
-if (OK != ret) {
-perf_count(_comms_errors);
-log("i2c::transfer returned %d", ret);
-return ret;
-}
+	if (OK != ret) {
+		perf_count(_comms_errors);
+		log("i2c::transfer returned %d", ret);
+		return ret;
+	}
 
-ret = OK;
+	ret = OK;
 
-return ret;
+	return ret;
 }
 
 int
 MEASAirspeed::collect()
 {
-int	ret = -EIO;
+	int	ret = -EIO;
 
-/* read from the sensor */
-uint8_t val[4] = {0, 0, 0, 0};
-
-
-perf_begin(_sample_perf);
-
-ret = transfer(nullptr, 0, &val[0], 4);
-
-if (ret < 0) {
-log("error reading from sensor: %d", ret);
-return ret;
-}
-
-uint8_t status = val[0] & 0xC0;
-
-if (status == 2) {
-log("err: stale data");
-} else if (status == 3) {
-log("err: fault");
-}
+	/* read from the sensor */
+	uint8_t val[4] = {0, 0, 0, 0};
 
 
-int16_t dp_raw = 0, dT_raw = 0;
-float Temperature_MS4515 = 0;
-dp_raw = (val[0] << 8) + val[1];
-  dp_raw = 0x3FFF & dp_raw;
-  dT_raw = (val[2] << 8) + val[3];
-  dT_raw = (0xFFE0 & dT_raw)>>5;
-  Temperature_MS4515 = ((200*dT_raw)/2047) - 50;
+	perf_begin(_sample_perf);
+
+	ret = transfer(nullptr, 0, &val[0], 4);
+
+	if (ret < 0) {
+		log("error reading from sensor: %d", ret);
+		return ret;
+	}
+
+	uint8_t status = val[0] & 0xC0;
+
+	if (status == 2) {
+		log("err: stale data");
+
+	} else if (status == 3) {
+		log("err: fault");
+	}
+
+
+	int16_t dp_raw = 0, dT_raw = 0;
+	float Temperature_MS4515 = 0;
+	dp_raw = (val[0] << 8) + val[1];
+	dp_raw = 0x3FFF & dp_raw;
+	dT_raw = (val[2] << 8) + val[3];
+	dT_raw = (0xFFE0 & dT_raw) >> 5;
+	Temperature_MS4515 = ((200 * dT_raw) / 2047) - 50;
 
 // XXX we may want to smooth out the readings to remove noise.
 
-_reports[_next_report].timestamp = hrt_absolute_time();
-_reports[_next_report].temperature = Temperature_MS4515;
-_reports[_next_report].differential_pressure_pa = dp_raw;
+	_reports[_next_report].timestamp = hrt_absolute_time();
+	_reports[_next_report].temperature = Temperature_MS4515;
+	_reports[_next_report].differential_pressure_pa = dp_raw;
 
 // Track maximum differential pressure measured (so we can work out top speed).
-if (dp_raw > _reports[_next_report].max_differential_pressure_pa) {
-_reports[_next_report].max_differential_pressure_pa = dp_raw;
-}
+	if (dp_raw > _reports[_next_report].max_differential_pressure_pa) {
+		_reports[_next_report].max_differential_pressure_pa = dp_raw;
+	}
 
-/* announce the airspeed if needed, just publish else */
-orb_publish(ORB_ID(differential_pressure), _airspeed_pub, &_reports[_next_report]);
+	/* announce the airspeed if needed, just publish else */
+	orb_publish(ORB_ID(differential_pressure), _airspeed_pub, &_reports[_next_report]);
 
-/* post a report to the ring - note, not locked */
-INCREMENT(_next_report, _num_reports);
+	/* post a report to the ring - note, not locked */
+	INCREMENT(_next_report, _num_reports);
 
-/* if we are running up against the oldest report, toss it */
-if (_next_report == _oldest_report) {
-perf_count(_buffer_overflows);
-INCREMENT(_oldest_report, _num_reports);
-}
+	/* if we are running up against the oldest report, toss it */
+	if (_next_report == _oldest_report) {
+		perf_count(_buffer_overflows);
+		INCREMENT(_oldest_report, _num_reports);
+	}
 
-/* notify anyone waiting for data */
-poll_notify(POLLIN);
+	/* notify anyone waiting for data */
+	poll_notify(POLLIN);
 
-ret = OK;
+	ret = OK;
 
-perf_end(_sample_perf);
+	perf_end(_sample_perf);
 
-return ret;
+	return ret;
 }
 
 void
 MEASAirspeed::cycle()
 {
-/* collection phase? */
-if (_collect_phase) {
+	/* collection phase? */
+	if (_collect_phase) {
 
-/* perform collection */
-if (OK != collect()) {
-log("collection error");
-/* restart the measurement state machine */
-start();
-return;
-}
+		/* perform collection */
+		if (OK != collect()) {
+			log("collection error");
+			/* restart the measurement state machine */
+			start();
+			return;
+		}
 
-/* next phase is measurement */
-_collect_phase = false;
+		/* next phase is measurement */
+		_collect_phase = false;
 
-/*
-* Is there a collect->measure gap?
-*/
-if (_measure_ticks > USEC2TICK(CONVERSION_INTERVAL)) {
+		/*
+		* Is there a collect->measure gap?
+		*/
+		if (_measure_ticks > USEC2TICK(CONVERSION_INTERVAL)) {
 
-/* schedule a fresh cycle call when we are ready to measure again */
-work_queue(HPWORK,
-&_work,
-(worker_t)&Airspeed::cycle_trampoline,
-this,
-_measure_ticks - USEC2TICK(CONVERSION_INTERVAL));
+			/* schedule a fresh cycle call when we are ready to measure again */
+			work_queue(HPWORK,
+				   &_work,
+				   (worker_t)&Airspeed::cycle_trampoline,
+				   this,
+				   _measure_ticks - USEC2TICK(CONVERSION_INTERVAL));
 
-return;
-}
-}
+			return;
+		}
+	}
 
-/* measurement phase */
-if (OK != measure())
-log("measure error");
+	/* measurement phase */
+	if (OK != measure())
+		log("measure error");
 
-/* next phase is collection */
-_collect_phase = true;
+	/* next phase is collection */
+	_collect_phase = true;
 
-/* schedule a fresh cycle call when the measurement is done */
-work_queue(HPWORK,
-&_work,
-(worker_t)&Airspeed::cycle_trampoline,
-this,
-USEC2TICK(CONVERSION_INTERVAL));
+	/* schedule a fresh cycle call when the measurement is done */
+	work_queue(HPWORK,
+		   &_work,
+		   (worker_t)&Airspeed::cycle_trampoline,
+		   this,
+		   USEC2TICK(CONVERSION_INTERVAL));
 }
 
 /**
@@ -291,51 +292,51 @@ void	info();
 void
 start(int i2c_bus)
 {
-int fd;
+	int fd;
 
-if (g_dev != nullptr)
-errx(1, "already started");
+	if (g_dev != nullptr)
+		errx(1, "already started");
 
-/* create the driver, try the MS4525DO first */
-g_dev = new MEASAirspeed(i2c_bus, I2C_ADDRESS_MS4525DO);
+	/* create the driver, try the MS4525DO first */
+	g_dev = new MEASAirspeed(i2c_bus, I2C_ADDRESS_MS4525DO);
 
-/* check if the MS4525DO was instantiated */
-if (g_dev == nullptr)
-goto fail;
+	/* check if the MS4525DO was instantiated */
+	if (g_dev == nullptr)
+		goto fail;
 
-/* try the MS5525DSO next if init fails */
-if (OK != g_dev->Airspeed::init()) {
-delete g_dev;
-g_dev = new MEASAirspeed(i2c_bus, I2C_ADDRESS_MS5525DSO);
+	/* try the MS5525DSO next if init fails */
+	if (OK != g_dev->Airspeed::init()) {
+		delete g_dev;
+		g_dev = new MEASAirspeed(i2c_bus, I2C_ADDRESS_MS5525DSO);
 
-/* check if the MS5525DSO was instantiated */
-if (g_dev == nullptr)
-goto fail;
+		/* check if the MS5525DSO was instantiated */
+		if (g_dev == nullptr)
+			goto fail;
 
-/* both versions failed if the init for the MS5525DSO fails, give up */
-if (OK != g_dev->Airspeed::init())
-goto fail;
-}
+		/* both versions failed if the init for the MS5525DSO fails, give up */
+		if (OK != g_dev->Airspeed::init())
+			goto fail;
+	}
 
-/* set the poll rate to default, starts automatic data collection */
-fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+	/* set the poll rate to default, starts automatic data collection */
+	fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
 
-if (fd < 0)
-goto fail;
+	if (fd < 0)
+		goto fail;
 
-if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT) < 0)
-goto fail;
+	if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT) < 0)
+		goto fail;
 
-exit(0);
+	exit(0);
 
 fail:
 
-if (g_dev != nullptr) {
-delete g_dev;
-g_dev = nullptr;
-}
+	if (g_dev != nullptr) {
+		delete g_dev;
+		g_dev = nullptr;
+	}
 
-errx(1, "driver start failed");
+	errx(1, "driver start failed");
 }
 
 /**
@@ -344,15 +345,15 @@ errx(1, "driver start failed");
 void
 stop()
 {
-if (g_dev != nullptr) {
-delete g_dev;
-g_dev = nullptr;
+	if (g_dev != nullptr) {
+		delete g_dev;
+		g_dev = nullptr;
 
-} else {
-errx(1, "driver not running");
-}
+	} else {
+		errx(1, "driver not running");
+	}
 
-exit(0);
+	exit(0);
 }
 
 /**
@@ -363,52 +364,52 @@ exit(0);
 void
 test()
 {
-struct differential_pressure_s report;
-ssize_t sz;
-int ret;
+	struct differential_pressure_s report;
+	ssize_t sz;
+	int ret;
 
-int fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+	int fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
 
-if (fd < 0)
-err(1, "%s open failed (try 'meas_airspeed start' if the driver is not running", AIRSPEED_DEVICE_PATH);
+	if (fd < 0)
+		err(1, "%s open failed (try 'meas_airspeed start' if the driver is not running", AIRSPEED_DEVICE_PATH);
 
-/* do a simple demand read */
-sz = read(fd, &report, sizeof(report));
+	/* do a simple demand read */
+	sz = read(fd, &report, sizeof(report));
 
-if (sz != sizeof(report))
-err(1, "immediate read failed");
+	if (sz != sizeof(report))
+		err(1, "immediate read failed");
 
-warnx("single read");
-warnx("diff pressure: %d pa", report.differential_pressure_pa);
+	warnx("single read");
+	warnx("diff pressure: %d pa", report.differential_pressure_pa);
 
-/* start the sensor polling at 2Hz */
-if (OK != ioctl(fd, SENSORIOCSPOLLRATE, 2))
-errx(1, "failed to set 2Hz poll rate");
+	/* start the sensor polling at 2Hz */
+	if (OK != ioctl(fd, SENSORIOCSPOLLRATE, 2))
+		errx(1, "failed to set 2Hz poll rate");
 
-/* read the sensor 5x and report each value */
-for (unsigned i = 0; i < 5; i++) {
-struct pollfd fds;
+	/* read the sensor 5x and report each value */
+	for (unsigned i = 0; i < 5; i++) {
+		struct pollfd fds;
 
-/* wait for data to be ready */
-fds.fd = fd;
-fds.events = POLLIN;
-ret = poll(&fds, 1, 2000);
+		/* wait for data to be ready */
+		fds.fd = fd;
+		fds.events = POLLIN;
+		ret = poll(&fds, 1, 2000);
 
-if (ret != 1)
-errx(1, "timed out waiting for sensor data");
+		if (ret != 1)
+			errx(1, "timed out waiting for sensor data");
 
-/* now go get it */
-sz = read(fd, &report, sizeof(report));
+		/* now go get it */
+		sz = read(fd, &report, sizeof(report));
 
-if (sz != sizeof(report))
-err(1, "periodic read failed");
+		if (sz != sizeof(report))
+			err(1, "periodic read failed");
 
-warnx("periodic read %u", i);
-warnx("diff pressure: %d pa", report.differential_pressure_pa);
-warnx("temperature: %d C (0x%02x)", (int)report.temperature, (unsigned) report.temperature);
-}
+		warnx("periodic read %u", i);
+		warnx("diff pressure: %d pa", report.differential_pressure_pa);
+		warnx("temperature: %d C (0x%02x)", (int)report.temperature, (unsigned) report.temperature);
+	}
 
-errx(0, "PASS");
+	errx(0, "PASS");
 }
 
 /**
@@ -417,18 +418,18 @@ errx(0, "PASS");
 void
 reset()
 {
-int fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+	int fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
 
-if (fd < 0)
-err(1, "failed ");
+	if (fd < 0)
+		err(1, "failed ");
 
-if (ioctl(fd, SENSORIOCRESET, 0) < 0)
-err(1, "driver reset failed");
+	if (ioctl(fd, SENSORIOCRESET, 0) < 0)
+		err(1, "driver reset failed");
 
-if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT) < 0)
-err(1, "driver poll restart failed");
+	if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT) < 0)
+		err(1, "driver poll restart failed");
 
-exit(0);
+	exit(0);
 }
 
 /**
@@ -437,13 +438,13 @@ exit(0);
 void
 info()
 {
-if (g_dev == nullptr)
-errx(1, "driver not running");
+	if (g_dev == nullptr)
+		errx(1, "driver not running");
 
-printf("state @ %p\n", g_dev);
-g_dev->print_info();
+	printf("state @ %p\n", g_dev);
+	g_dev->print_info();
 
-exit(0);
+	exit(0);
 }
 
 } // namespace
@@ -452,58 +453,58 @@ exit(0);
 static void
 meas_airspeed_usage()
 {
-warnx("usage: meas_airspeed command [options]");
-warnx("options:");
-warnx("\t-b --bus i2cbus (%d)", PX4_I2C_BUS_DEFAULT);
-warnx("command:");
-warnx("\tstart|stop|reset|test|info");
+	warnx("usage: meas_airspeed command [options]");
+	warnx("options:");
+	warnx("\t-b --bus i2cbus (%d)", PX4_I2C_BUS_DEFAULT);
+	warnx("command:");
+	warnx("\tstart|stop|reset|test|info");
 }
 
 int
 meas_airspeed_main(int argc, char *argv[])
 {
-int i2c_bus = PX4_I2C_BUS_DEFAULT;
+	int i2c_bus = PX4_I2C_BUS_DEFAULT;
 
-int i;
+	int i;
 
-for (i = 1; i < argc; i++) {
-if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bus") == 0) {
-if (argc > i + 1) {
-i2c_bus = atoi(argv[i + 1]);
-}
-}
-}
+	for (i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bus") == 0) {
+			if (argc > i + 1) {
+				i2c_bus = atoi(argv[i + 1]);
+			}
+		}
+	}
 
-/*
-* Start/load the driver.
-*/
-if (!strcmp(argv[1], "start"))
-meas_airspeed::start(i2c_bus);
+	/*
+	* Start/load the driver.
+	*/
+	if (!strcmp(argv[1], "start"))
+		meas_airspeed::start(i2c_bus);
 
-/*
-* Stop the driver
-*/
-if (!strcmp(argv[1], "stop"))
-meas_airspeed::stop();
+	/*
+	* Stop the driver
+	*/
+	if (!strcmp(argv[1], "stop"))
+		meas_airspeed::stop();
 
-/*
-* Test the driver/device.
-*/
-if (!strcmp(argv[1], "test"))
-meas_airspeed::test();
+	/*
+	* Test the driver/device.
+	*/
+	if (!strcmp(argv[1], "test"))
+		meas_airspeed::test();
 
-/*
-* Reset the driver.
-*/
-if (!strcmp(argv[1], "reset"))
-meas_airspeed::reset();
+	/*
+	* Reset the driver.
+	*/
+	if (!strcmp(argv[1], "reset"))
+		meas_airspeed::reset();
 
-/*
-* Print driver information.
-*/
-if (!strcmp(argv[1], "info") || !strcmp(argv[1], "status"))
-meas_airspeed::info();
+	/*
+	* Print driver information.
+	*/
+	if (!strcmp(argv[1], "info") || !strcmp(argv[1], "status"))
+		meas_airspeed::info();
 
-meas_airspeed_usage();
-exit(0);
+	meas_airspeed_usage();
+	exit(0);
 }
