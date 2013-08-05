@@ -62,6 +62,8 @@ LIBRARIES	+= modules/mathlib/CMSIS
 #
 # Demo apps
 #
+MODULES		+= examples/gcm
+
 #MODULES		+= examples/math_demo
 # Tutorial code from
 # https://pixhawk.ethz.ch/px4/dev/hello_sky
