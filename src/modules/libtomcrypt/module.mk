@@ -192,3 +192,5 @@ INCLUDE_DIRS	+=	$(PX4_INCLUDE_DIR)/libtomcrypt \
 # Make all symbols of this library visible globally
 #
 DEFAULT_VISIBILITY	= y
+
+MAXOPTIMIZATION		= -Os

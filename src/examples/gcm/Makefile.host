@@ -1,0 +1,278 @@
+#
+# LibTom Crypt
+#
+# Cryptography library by Tom St Denis, licensed WTFPL / public domain.
+#
+# http://libtom.org/?page=download&newsitems=5&whatfile=crypt
+#
+# Selectively compiling only the parts we actually use. Right now this includes:
+#
+# - PKCS #1
+# - RSA
+#
+
+SRCS		=	../../modules/libtomcrypt/encauth/gcm/gcm_add_aad.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_add_iv.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_done.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_gf_mult.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_init.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_memory.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_mult_h.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_process.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_reset.c \
+			../../modules/libtomcrypt/encauth/gcm/gcm_test.c \
+			../../modules/libtomcrypt/hashes/sha1.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_ansi_x963_export.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_ansi_x963_import.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_decrypt_key.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_encrypt_key.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_export.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_free.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_get_size.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_import.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_make_key.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_shared_secret.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_sign_hash.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_sizes.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_test.c \
+			../../modules/libtomcrypt/pk/ecc/ecc_verify_hash.c \
+			../../modules/libtomcrypt/pk/ecc/ecc.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_is_valid_idx.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_map.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_mul2add.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_mulmod_timing.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_mulmod.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_points.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_projective_add_point.c \
+			../../modules/libtomcrypt/pk/ecc/ltc_ecc_projective_dbl_point.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_i2osp.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_mgf1.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_oaep_decode.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_oaep_encode.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_os2ip.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_pss_decode.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_pss_encode.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_decode.c \
+			../../modules/libtomcrypt/pk/pkcs1/pkcs_1_v1_5_encode.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_decrypt_key.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_encrypt_key.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_export.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_exptmod.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_free.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_import.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_make_key.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_sign_hash.c \
+			../../modules/libtomcrypt/pk/rsa/rsa_verify_hash.c \
+			../../modules/libtomcrypt/pk/asn1/der/bit/der_decode_bit_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/bit/der_encode_bit_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/bit/der_length_bit_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/boolean/der_decode_boolean.c \
+			../../modules/libtomcrypt/pk/asn1/der/boolean/der_encode_boolean.c \
+			../../modules/libtomcrypt/pk/asn1/der/boolean/der_length_boolean.c \
+			../../modules/libtomcrypt/pk/asn1/der/choice/der_decode_choice.c \
+			../../modules/libtomcrypt/pk/asn1/der/ia5/der_decode_ia5_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/ia5/der_encode_ia5_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/ia5/der_length_ia5_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/integer/der_decode_integer.c \
+			../../modules/libtomcrypt/pk/asn1/der/integer/der_encode_integer.c \
+			../../modules/libtomcrypt/pk/asn1/der/integer/der_length_integer.c \
+			../../modules/libtomcrypt/pk/asn1/der/object_identifier/der_decode_object_identifier.c \
+			../../modules/libtomcrypt/pk/asn1/der/object_identifier/der_encode_object_identifier.c \
+			../../modules/libtomcrypt/pk/asn1/der/object_identifier/der_length_object_identifier.c \
+			../../modules/libtomcrypt/pk/asn1/der/octet/der_decode_octet_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/octet/der_encode_octet_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/octet/der_length_octet_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/printable_string/der_decode_printable_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/printable_string/der_encode_printable_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/printable_string/der_length_printable_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_ex.c \
+			../../modules/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_flexi.c \
+			../../modules/libtomcrypt/pk/asn1/der/sequence/der_decode_sequence_multi.c \
+			../../modules/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_ex.c \
+			../../modules/libtomcrypt/pk/asn1/der/sequence/der_encode_sequence_multi.c \
+			../../modules/libtomcrypt/pk/asn1/der/sequence/der_length_sequence.c \
+			../../modules/libtomcrypt/pk/asn1/der/sequence/der_sequence_free.c \
+			../../modules/libtomcrypt/pk/asn1/der/set/der_encode_set.c \
+			../../modules/libtomcrypt/pk/asn1/der/set/der_encode_setof.c \
+			../../modules/libtomcrypt/pk/asn1/der/short_integer/der_decode_short_integer.c \
+			../../modules/libtomcrypt/pk/asn1/der/short_integer/der_encode_short_integer.c \
+			../../modules/libtomcrypt/pk/asn1/der/short_integer/der_length_short_integer.c \
+			../../modules/libtomcrypt/pk/asn1/der/utctime/der_decode_utctime.c \
+			../../modules/libtomcrypt/pk/asn1/der/utctime/der_encode_utctime.c \
+			../../modules/libtomcrypt/pk/asn1/der/utctime/der_length_utctime.c \
+			../../modules/libtomcrypt/pk/asn1/der/utf8/der_decode_utf8_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/utf8/der_encode_utf8_string.c \
+			../../modules/libtomcrypt/pk/asn1/der/utf8/der_length_utf8_string.c \
+			../../modules/libtomcrypt/ciphers/aes/aes_tab.c \
+			../../modules/libtomcrypt/ciphers/aes/aes.c \
+			../../modules/libtomcrypt/hashes/sha2/sha256.c \
+			../../modules/libtomcrypt/hashes/helper/hash_memory.c \
+			../../modules/libtomcrypt/prngs/yarrow.c \
+			../../modules/libtomcrypt/prngs/rng_get_bytes.c \
+			../../modules/libtomcrypt/prngs/rng_make_prng.c \
+			../../modules/libtomcrypt/misc/base64/base64_decode.c \
+			../../modules/libtomcrypt/misc/base64/base64_encode.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_argchk.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_cipher_descriptor.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_cipher_is_valid.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_cipher_any.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_cipher_id.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_cipher.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_hash_any.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_hash_id.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_hash_oid.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_hash.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_find_prng.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_fsa.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_hash_descriptor.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_hash_is_valid.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_ltc_mp_descriptor.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_prng_descriptor.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_prng_is_valid.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_register_cipher.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_register_hash.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_register_prng.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_unregister_cipher.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_unregister_hash.c \
+			../../modules/libtomcrypt/misc/crypt/crypt_unregister_prng.c \
+			../../modules/libtomcrypt/misc/crypt/crypt.c \
+			../../modules/libtomcrypt/misc/error_to_string.c \
+			../../modules/libtomcrypt/misc/zeromem.c \
+			../../modules/libtomcrypt/math/fp/ltc_ecc_fp_mulmod.c \
+			../../modules/libtomcrypt/math/gmp_desc.c \
+			../../modules/libtomcrypt/math/ltm_desc.c \
+			../../modules/libtomcrypt/math/multi.c \
+			../../modules/libtomcrypt/math/rand_prime.c \
+			../../modules/libtomcrypt/math/tfm_desc.c \
+			../../modules/libtomcrypt/modes/ctr/ctr_decrypt.c \
+			../../modules/libtomcrypt/modes/ctr/ctr_done.c \
+			../../modules/libtomcrypt/modes/ctr/ctr_encrypt.c \
+			../../modules/libtomcrypt/modes/ctr/ctr_getiv.c \
+			../../modules/libtomcrypt/modes/ctr/ctr_setiv.c \
+			../../modules/libtomcrypt/modes/ctr/ctr_start.c \
+			../../modules/libtomcrypt/modes/ctr/ctr_test.c \
+			../../modules/libtomfastmath/addsub/fp_add_d.c \
+			../../modules/libtomfastmath/addsub/fp_add.c \
+			../../modules/libtomfastmath/addsub/fp_addmod.c \
+			../../modules/libtomfastmath/addsub/fp_cmp_d.c \
+			../../modules/libtomfastmath/addsub/fp_cmp_mag.c \
+			../../modules/libtomfastmath/addsub/fp_cmp.c \
+			../../modules/libtomfastmath/addsub/fp_sub_d.c \
+			../../modules/libtomfastmath/addsub/fp_sub.c \
+			../../modules/libtomfastmath/addsub/fp_submod.c \
+			../../modules/libtomfastmath/addsub/s_fp_add.c \
+			../../modules/libtomfastmath/addsub/s_fp_sub.c \
+			../../modules/libtomfastmath/bin/fp_radix_size.c \
+			../../modules/libtomfastmath/bin/fp_read_radix.c \
+			../../modules/libtomfastmath/bin/fp_read_signed_bin.c \
+			../../modules/libtomfastmath/bin/fp_read_unsigned_bin.c \
+			../../modules/libtomfastmath/bin/fp_reverse.c \
+			../../modules/libtomfastmath/bin/fp_s_rmap.c \
+			../../modules/libtomfastmath/bin/fp_signed_bin_size.c \
+			../../modules/libtomfastmath/bin/fp_to_signed_bin.c \
+			../../modules/libtomfastmath/bin/fp_to_unsigned_bin.c \
+			../../modules/libtomfastmath/bin/fp_toradix.c \
+			../../modules/libtomfastmath/bin/fp_unsigned_bin_size.c \
+			../../modules/libtomfastmath/bit/fp_cnt_lsb.c \
+			../../modules/libtomfastmath/bit/fp_count_bits.c \
+			../../modules/libtomfastmath/bit/fp_div_2.c \
+			../../modules/libtomfastmath/bit/fp_div_2d.c \
+			../../modules/libtomfastmath/bit/fp_lshd.c \
+			../../modules/libtomfastmath/bit/fp_mod_2d.c \
+			../../modules/libtomfastmath/bit/fp_rshd.c \
+			../../modules/libtomfastmath/divide/fp_div.c \
+			../../modules/libtomfastmath/divide/fp_div_d.c \
+			../../modules/libtomfastmath/divide/fp_mod.c \
+			../../modules/libtomfastmath/divide/fp_mod_d.c \
+			../../modules/libtomfastmath/exptmod/fp_2expt.c \
+			../../modules/libtomfastmath/exptmod/fp_exptmod.c \
+			../../modules/libtomfastmath/misc/fp_set.c \
+			../../modules/libtomfastmath/mont/fp_montgomery_calc_normalization.c \
+			../../modules/libtomfastmath/mont/fp_montgomery_reduce.c \
+			../../modules/libtomfastmath/mont/fp_montgomery_setup.c \
+			../../modules/libtomfastmath/mul/fp_mul_2.c \
+			../../modules/libtomfastmath/mul/fp_mul_2d.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_3.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_4.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_6.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_7.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_8.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_9.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_12.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_17.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_20.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_24.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_28.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_32.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_48.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_64.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba_small_set.c \
+			../../modules/libtomfastmath/mul/fp_mul_comba.c \
+			../../modules/libtomfastmath/mul/fp_mul_d.c \
+			../../modules/libtomfastmath/mul/fp_mul.c \
+			../../modules/libtomfastmath/mul/fp_mulmod.c \
+			../../modules/libtomfastmath/numtheory/fp_gcd.c \
+			../../modules/libtomfastmath/numtheory/fp_isprime.c \
+			../../modules/libtomfastmath/numtheory/fp_invmod.c \
+			../../modules/libtomfastmath/numtheory/fp_lcm.c \
+			../../modules/libtomfastmath/numtheory/fp_prime_miller_rabin.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_3.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_4.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_6.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_7.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_8.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_9.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_12.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_17.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_20.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_24.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_28.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_32.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_48.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_64.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_generic.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba_small_set.c \
+			../../modules/libtomfastmath/sqr/fp_sqr_comba.c \
+			../../modules/libtomfastmath/sqr/fp_sqr.c \
+			../../modules/libtomfastmath/sqr/fp_sqrmod.c \
+			gcm.c
+
+
+INCLUDE_DIRS	+= ../modules/libtomfastmath \
+		   ../modules/libtomcrypt \
+		   ../../mavlink/include
+
+# use the C compiler
+CC = gcc
+
+# flags
+CFLAGS = -Wall -g -std=gnu99 -DCRYPT
+
+# include dirs
+INCLUDES = -I.  -I../../include/libtomcrypt -I../../include -I../../include/libtomfastmath -I../../../mavlink/include
+
+# libs
+LIBS = -lm
+
+
+OBJS = $(SRCS:.c=.o)
+
+# executable
+MAIN = gcm
+
+.PHONY: depend clean
+
+all:	$(MAIN)
+	@echo  GCM test compiled
+
+$(MAIN): $(OBJS) 
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
+
+.c.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+
+clean:
+	$(RM) *.o *~ $(MAIN)
+
+depend: $(SRCS)
+	makedepend $(INCLUDES) $^
