@@ -516,6 +516,7 @@ void mavlink_update_system(void)
 int mavlink_thread_main(int argc, char *argv[])
 {
 	/* initialize mavlink text message buffering */
+	usleep(10000);
 	mavlink_logbuffer_init(&lb, 5);
 
 	int ch;
