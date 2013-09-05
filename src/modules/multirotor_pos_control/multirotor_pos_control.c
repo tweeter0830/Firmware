@@ -91,8 +91,12 @@ static float scale_control(float ctl, float end, float dz);
 
 static float norm(float x, float y);
 
+/**
+ * print an error message
+ */
 static void usage(const char *reason)
 {
+	//If reason != NULL
 	if (reason)
 		fprintf(stderr, "%s\n", reason);
 
@@ -126,8 +130,9 @@ int multirotor_pos_control_main(int argc, char *argv[])
 		deamon_task = task_spawn_cmd("multirotor_pos_control",
 					     SCHED_DEFAULT,
 					     SCHED_PRIORITY_MAX - 60,
-					     4096,
+					     4096, //Stack size. Size of memory that this task can take from
 					     multirotor_pos_control_thread_main,
+					     //if (more?!) arguments exist, pass them to the task
 					     (argv) ? (const char **)&argv[2] : (const char **)NULL);
 		exit(0);
 	}
@@ -153,6 +158,11 @@ int multirotor_pos_control_main(int argc, char *argv[])
 	exit(1);
 }
 
+/*
+ * Looks like a way to scale a around a deadzone specified by dz
+ * scale the control of a range from 0-end as a fraction of the length(end-x)
+ * we ignore the fraction of the control in the deadzone
+ */
 static float scale_control(float ctl, float end, float dz)
 {
 	if (ctl > dz) {
@@ -171,6 +181,10 @@ static float norm(float x, float y)
 	return sqrtf(x * x + y * y);
 }
 
+/*
+ * Inputs:
+ * 		arguments passed from the main thread - the first argument?
+ */
 static int multirotor_pos_control_thread_main(int argc, char *argv[])
 {
 	/* welcome user */
