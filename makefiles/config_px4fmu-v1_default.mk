@@ -117,6 +117,7 @@ MODULES		+= lib/geo
 #
 # Demo apps
 #
+MODULES		+= modules/px4_simple_app
 #MODULES		+= examples/math_demo
 # Tutorial code from
 # https://pixhawk.ethz.ch/px4/dev/hello_sky

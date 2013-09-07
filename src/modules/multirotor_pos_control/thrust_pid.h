@@ -53,10 +53,10 @@ __BEGIN_DECLS
 #define THRUST_PID_MODE_DERIVATIV_CALC_NO_SP	1
 
 typedef struct {
-	float kp;
+	float kp; 
 	float ki;
 	float kd;
-	float sp;
+	float sp; //setpoint
 	float integral;
 	float error_previous;
 	float last_output;
@@ -66,6 +66,7 @@ typedef struct {
 	uint8_t mode;
 } thrust_pid_t;
 
+//__EXPORT is a code for some windows compilers. 
 __EXPORT void thrust_pid_init(thrust_pid_t *pid, float kp, float ki, float kd, float limit_min, float limit_max, uint8_t mode, float dt_min);
 __EXPORT int thrust_pid_set_parameters(thrust_pid_t *pid, float kp, float ki, float kd, float limit_min, float limit_max);
 __EXPORT float thrust_pid_calculate(thrust_pid_t *pid, float sp, float val, float dt, float r22);
