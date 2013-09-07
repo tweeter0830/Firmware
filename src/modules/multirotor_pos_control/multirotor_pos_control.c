@@ -91,8 +91,12 @@ static float scale_control(float ctl, float end, float dz);
 
 static float norm(float x, float y);
 
+/**
+ * print an error message
+ */
 static void usage(const char *reason)
 {
+	//If reason != NULL
 	if (reason)
 		fprintf(stderr, "%s\n", reason);
 
@@ -126,8 +130,9 @@ int multirotor_pos_control_main(int argc, char *argv[])
 		deamon_task = task_spawn_cmd("multirotor_pos_control",
 					     SCHED_DEFAULT,
 					     SCHED_PRIORITY_MAX - 60,
-					     4096,
+					     4096, //Stack size. Size of memory that this task can take from
 					     multirotor_pos_control_thread_main,
+					     //if (more?!) arguments exist, pass them to the task
 					     (argv) ? (const char **)&argv[2] : (const char **)NULL);
 		exit(0);
 	}
@@ -153,6 +158,11 @@ int multirotor_pos_control_main(int argc, char *argv[])
 	exit(1);
 }
 
+/*
+ * Looks like a way to scale a around a deadzone specified by dz
+ * scale the control of a range from 0-end as a fraction of the length(end-x)
+ * we ignore the fraction of the control in the deadzone
+ */
 static float scale_control(float ctl, float end, float dz)
 {
 	if (ctl > dz) {
@@ -171,6 +181,10 @@ static float norm(float x, float y)
 	return sqrtf(x * x + y * y);
 }
 
+/*
+ * Inputs:
+ * 		arguments passed from the main thread - the first argument?
+ */
 static int multirotor_pos_control_thread_main(int argc, char *argv[])
 {
 	/* welcome user */
@@ -227,8 +241,8 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 	hrt_abstime t_prev = 0;
 	const float alt_ctl_dz = 0.2f;
 	const float pos_ctl_dz = 0.05f;
-	const float takeoff_alt_default = 10.0f;
-	float ref_alt = 0.0f;
+	const float takeoff_alt_default = 10.0f; //Meters above sea level?
+	float ref_alt = 0.0f; //??
 	hrt_abstime ref_alt_t = 0;
 	uint64_t local_ref_timestamp = 0;
 
@@ -244,6 +258,9 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 	parameters_init(&params_h);
 	parameters_update(&params_h, &params);
 
+	//Set up PIDs for the x and y positions as well as their velocities
+	//For position, don't use integral control and use a provided derivative value
+	//For velocity I think we are using negative derivative control. d=old val-current val this is strange
 	for (int i = 0; i < 2; i++) {
 		pid_init(&(xy_pos_pids[i]), params.xy_p, 0.0f, params.xy_d, 1.0f, 0.0f, PID_MODE_DERIVATIV_SET, 0.02f);
 		pid_init(&(xy_vel_pids[i]), params.xy_vel_p, params.xy_vel_i, params.xy_vel_d, 1.0f, params.tilt_max, PID_MODE_DERIVATIV_CALC_NO_SP, 0.02f);
