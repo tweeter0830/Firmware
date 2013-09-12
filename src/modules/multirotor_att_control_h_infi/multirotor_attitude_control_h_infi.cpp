@@ -38,14 +38,15 @@
  */
 
 #include "../ecl.h"
-#include "ecl_roll_controller.h"
+#include "Multirotor_Attitude_Control_H_Infi.hpp"
 #include <stdint.h>
+#include <math.h>
 #include <float.h>
 #include <geo/geo.h>
 #include <ecl/ecl.h>
 #include <mathlib/mathlib.h>
 
-ECL_RollController::ECL_RollController() :
+Multirotor_Attitude_Control_H_Infi::Multirotor_Attitude_Control_H_Infi() :
 	_last_run(0),
 	_tc(0.1f),
 	_last_output(0.0f),
@@ -57,76 +58,18 @@ ECL_RollController::ECL_RollController() :
 
 }
 
-float ECL_RollController::control(float roll_setpoint, float roll, float roll_rate,
-				  float scaler, bool lock_integrator, float airspeed_min, float airspeed_max, float airspeed)
+float Multirotor_Attitude_Control_H_Infi::control()
 {
-	/* get the usual dt estimate */
-	uint64_t dt_micros = ecl_elapsed_time(&_last_run);
-	_last_run = ecl_absolute_time();
-
-	float dt = (dt_micros > 500000) ? 0.0f : dt_micros / 1000000;
-
-	float k_ff = math::max((_k_p - _k_i * _tc) * _tc - _k_d, 0.0f);
-	float k_i_rate = _k_i * _tc;
-
-	/* input conditioning */
-	if (!isfinite(airspeed)) {
-		/* airspeed is NaN, +- INF or not available, pick center of band */
-		airspeed = 0.5f * (airspeed_min + airspeed_max);
-	} else if (airspeed < airspeed_min) {
-		airspeed = airspeed_min;
-	}
-
-	float roll_error = roll_setpoint - roll;
-	_rate_setpoint = roll_error / _tc;
-
-	/* limit the rate */
-	if (_max_rate > 0.01f) {
-		_rate_setpoint = (_rate_setpoint > _max_rate) ? _max_rate : _rate_setpoint;
-		_rate_setpoint = (_rate_setpoint < -_max_rate) ? -_max_rate : _rate_setpoint;
-	}
-
-	_rate_error = _rate_setpoint - roll_rate;
-
-
-	float ilimit_scaled = 0.0f;
-
-	if (!lock_integrator && k_i_rate > 0.0f && airspeed > 0.5f * airspeed_min) {
-
-		float id = _rate_error * k_i_rate * dt * scaler;
-
-		/*
-		 * anti-windup: do not allow integrator to increase into the
-		 * wrong direction if actuator is at limit
-		 */
-		if (_last_output < -_max_deflection_rad) {
-			/* only allow motion to center: increase value */
-			id = math::max(id, 0.0f);
-		} else if (_last_output > _max_deflection_rad) {
-			/* only allow motion to center: decrease value */
-			id = math::min(id, 0.0f);
-		}
-
-		_integrator += id;
-	}
-
-	/* integrator limit */
-	_integrator = math::constrain(_integrator, -ilimit_scaled, ilimit_scaled);
-	/* store non-limited output */
-	_last_output = ((_rate_error * _k_d * scaler) + _integrator + (_rate_setpoint * k_ff)) * scaler;
-
-	return math::constrain(_last_output, -_max_deflection_rad, _max_deflection_rad);
 }
 
-void ECL_RollController::reset_integrator()
+void Multirotor_Attitude_Control_H_Infi::reset_integrator()
 {
-	_integrator = 0.0f;
 }
 
-void calc_gains(const math::Matrix& M,const math::Matrix& C, float* k_p, float* k_i, float* k_d) {
+void Multirotor_Attitude_Control_H_Infi::calc_gains(const math::Matrix& M,const math::Matrix& C, float* k_p, float* k_i, float* k_d) {
 	const static float I_vals[][] =  {{1,0,0},{0,1,0},{0,0,1}};
 	const static math::Matrix I(3,3,I_vals);
-	const math::Matrix Dynamics_weights = M.inverse()*M_inv*(C+f1.0/_weight_torque*I);
+	const math::Matrix Dynamics_weights = M.inverse();//*(C+f1.0/_weight_torque*I);
 	const float long_expr = sqrt(_weight_error*_weight_error + f2.0*_weight_error_deriv*_weight_error_integral)/weight_error;
 
 	*k_d=long_expr*I+Dynamics_weights;
@@ -134,7 +77,7 @@ void calc_gains(const math::Matrix& M,const math::Matrix& C, float* k_p, float* 
 	*k_i=_weight_error_integral/_weight_error_deriv*Dynamics_weights;
 }
 
-void Multirotor_Attitude_Control_H_Infi::multirotor_attitiude make_M(const State& St, math::Matrix& M) {
+void Multirotor_Attitude_Control_H_Infi::make_M(const State& St, math::Matrix& M) {
 	float M_vals [3][3] = {0};
 	float sin_R=sin(St.r);
 	float cos_R=cos(St.r);
@@ -147,7 +90,7 @@ void Multirotor_Attitude_Control_H_Infi::multirotor_attitiude make_M(const State
 	M_vals[1][1]=_Iyy*cos_R*cos_R+_Izz*sin_R*sin_R;
 	M_vals[1][2]=(_Iyy-_Izz)*cos_R*sin_R*sin_P;
 	// Third row
-	M_vals[2][0]=-_Ixx*sin(p);
+	M_vals[2][0]=-_Ixx*sin_P;
 	M_vals[2][1]=(_Iyy-_Izz)*cos_R*sin_R*cos_P;
 	M_vals[2][2]=_Ixx*sin_P*sin_P + _Iyy*sin_R*sin_R*cos_P*cos_P +
 		     _Izz*cos_R*cos_R*cos_P*cos_P;
@@ -165,28 +108,28 @@ void Multirotor_Attitude_Control_H_Infi::make_C(const State& St, const State& Ra
 	//First Row
 	C_vals[0][0]=0;
 	C_vals[0][1]=(_Iyy-_Izz)*(long_factor) + 
-		     (_Izz-_Iyy)*Rate.y*cosR*cosR*cos_P -
+		     (_Izz-_Iyy)*Rate.y*cos_R*cos_R*cos_P -
 		     _Ixx*Rate.y*cos_P;
-	C_vals[0][2]=(_Izz-_Iyy)*Rate.p*cosR*sinR*cos_P*cos_P;
+	C_vals[0][2]=(_Izz-_Iyy)*Rate.p*cos_R*sin_R*cos_P*cos_P;
 	//Second Row
 	C_vals[1][0]=(_Izz-_Iyy)*(long_factor) + 
-	             (_Iyy-_Izz)*Rate.y*cosR*cosR*cos_P + 
+	             (_Iyy-_Izz)*Rate.y*cos_R*cos_R*cos_P +
 		     _Ixx*Rate.y*cos_P;
-	C_vals[1][1]=(_Izz-_Iyy)*Rate.r*cosR*cosR;
+	C_vals[1][1]=(_Izz-_Iyy)*Rate.r*cos_R*cos_R;
 	C_vals[1][2]=-_Ixx*Rate.y*sin_P*cos_P +
-		      _Iyy*Rate.y*sinR*sinR*cos_P*sin_P +
-		      _Izz*Rate.y*cosR*cosR*sin_P*cos_P;
+		      _Iyy*Rate.y*sin_R*sin_R*cos_P*sin_P +
+		      _Izz*Rate.y*cos_R*cos_R*sin_P*cos_P;
 	//Third Row
-	C_vals[2][0]=(_Iyy-_Izz)*Rate.y*cos_P*cos_P*sinR*cosR - 
+	C_vals[2][0]=(_Iyy-_Izz)*Rate.y*cos_P*cos_P*sin_R*cos_R - 
 		     _Ixx*Rate.p*cos_P;
-	C_vals[2][1]=(_Izz-_Iyy)*(Rate.p*cosR*sinR*sin_P+Rate.r*sinR*sinR*cos_p) + 
-		     (_Iyy-_Izz)*Rate.r*cosR*cosR*cos_P + 
+	C_vals[2][1]=(_Izz-_Iyy)*(Rate.p*cos_R*sin_R*sin_P+Rate.r*sin_R*sin_R*cos_P) +
+		     (_Iyy-_Izz)*Rate.r*cos_R*cos_R*cos_P + 
 		     _Ixx*Rate.y*sin_P*cos_P - 
-		     _Iyy*Rate.y*sinR*sinR*sin_P*cos_P - 
-		     _Izz*Rate.y*cosR*cosR*sin_P*cos_P;
-	C_vals[2][2]=(_Iyy-_Izz)*Rate.r*cosR*sinR*cos_P*cos_P - 
-		     _Iyy*Rate.p*sinR*sinR*cos_P*sin_P - 
-		     _Izz*Rate.p*cosR*cosR*cos_P*sin_P + 
+		     _Iyy*Rate.y*sin_R*sin_R*sin_P*cos_P - 
+		     _Izz*Rate.y*cos_R*cos_R*sin_P*cos_P;
+	C_vals[2][2]=(_Iyy-_Izz)*Rate.r*cos_R*sin_R*cos_P*cos_P - 
+		     _Iyy*Rate.p*sin_R*sin_R*cos_P*sin_P - 
+		     _Izz*Rate.p*cos_R*cos_R*cos_P*sin_P + 
 		     _Ixx*Rate.p*cos_P*sin_P;
 	C= math::Matrix(3,3,C_vals);
 }

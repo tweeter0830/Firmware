@@ -43,11 +43,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <"mathlib/mathlib.h">
+#include <mathlib/mathlib.h>
 
-class __EXPORT Multirotor_Attitude_Control_H_Infi{
+class Multirotor_Attitude_Control_H_Infi{ //__EXPORT
 public:
-	Multirotor_Attitude_Control_H_Infi()
+	Multirotor_Attitude_Control_H_Infi();
         
 	typedef struct State
 	{
@@ -57,8 +57,7 @@ public:
 		float y;
        	};
 
-	float control(float roll_setpoint, float roll, float roll_rate,
-		      float scaler = 1.0f, bool lock_integrator = false, float airspeed_min = 0.0f, float airspeed_max = 0.0f, float airspeed = (0.0f / 0.0f));
+	float control();
 
 	void reset_integrator();
 
@@ -68,27 +67,27 @@ public:
 		}
 	}
 	void set_k_p(float k_p) {
-		_k_p = k_p;
+		//_k_p = k_p;
 	}
 	void set_k_i(float k_i) {
-		_k_i = k_i;
+		//_k_i = k_i;
 	}
 	void set_k_d(float k_d) {
-		_k_d = k_d;
+		//_k_d = k_d;
 	}
 	void set_integrator_max(float max) {
-		_integrator_max = max;
+		//_integrator_max = max;
 	}
 	void set_max_rate(float max_rate) {
-		_max_rate = max_rate;
+		//_max_rate = max_rate;
 	}
 
 	float get_rate_error() {
-		return _rate_error;
+		//return _rate_error;
 	}
 
 	float get_desired_rate() {
-		return _rate_setpoint;
+		//return _rate_setpoint;
 	}
 
 private:
@@ -103,7 +102,7 @@ private:
 	float _Izz;
 	State _setpoint;
 	State _setpoint_rate;
-	Satte _setpoint_accel;
+	State _setpoint_accel;
 	float _command_torque [3];
 	
 	math::Vector _integral;
@@ -116,4 +115,4 @@ private:
 	void make_C(const State& St, const State& Rate, math::Matrix& C);
 };
 
-#endif // ECLROLL_CONTROLLER_H
+#endif // MULTIROTOR_ATTITUDE_CONTROL_H_INFI_H
