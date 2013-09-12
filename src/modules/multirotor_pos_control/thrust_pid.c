@@ -1,4 +1,5 @@
 /****************************************************************************
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  *
  *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
  *   Author: Anton Babushkin <anton.babushkin@me.com>
@@ -21,7 +22,6 @@
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -102,6 +102,12 @@ __EXPORT int thrust_pid_set_parameters(thrust_pid_t *pid, float kp, float ki, fl
 
 __EXPORT float thrust_pid_calculate(thrust_pid_t *pid, float sp, float val, float dt, float r22)
 {
+	/*Input:
+		sp: control setpoint
+		val: current value
+		dt: change in time
+		r22:?		
+	*/
 	/* Alternative integral component calculation
 	 *
 	 * start:

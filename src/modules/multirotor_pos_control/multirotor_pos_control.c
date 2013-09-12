@@ -241,8 +241,8 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 	hrt_abstime t_prev = 0;
 	const float alt_ctl_dz = 0.2f;
 	const float pos_ctl_dz = 0.05f;
-	const float takeoff_alt_default = 10.0f; //Meters above sea level?
-	float ref_alt = 0.0f; //??
+
+	float ref_alt = 0.0f;
 	hrt_abstime ref_alt_t = 0;
 	uint64_t local_ref_timestamp = 0;
 
@@ -265,27 +265,28 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 		pid_init(&(xy_pos_pids[i]), params.xy_p, 0.0f, params.xy_d, 1.0f, 0.0f, PID_MODE_DERIVATIV_SET, 0.02f);
 		pid_init(&(xy_vel_pids[i]), params.xy_vel_p, params.xy_vel_i, params.xy_vel_d, 1.0f, params.tilt_max, PID_MODE_DERIVATIV_CALC_NO_SP, 0.02f);
 	}
-
+    // Use P&d control with a given derivative for Z position control
 	pid_init(&z_pos_pid, params.z_p, 0.0f, params.z_d, 1.0f, params.z_vel_max, PID_MODE_DERIVATIV_SET, 0.02f);
+	// use a PID that is adjusted for altitude
 	thrust_pid_init(&z_vel_pid, params.z_vel_p, params.z_vel_i, params.z_vel_d, -params.thr_max, -params.thr_min, PID_MODE_DERIVATIV_CALC_NO_SP, 0.02f);
 
 	while (!thread_should_exit) {
 
 		bool param_updated;
-		orb_check(param_sub, &param_updated);
-
+		orb_check(param_sub, &param_updated); //check if the parameters have been updated
+		
 		if (param_updated) {
 			/* clear updated flag */
 			struct parameter_update_s ps;
 			orb_copy(ORB_ID(parameter_update), param_sub, &ps);
 			/* update params */
 			parameters_update(&params_h, &params);
-
+			
 			for (int i = 0; i < 2; i++) {
 				pid_set_parameters(&(xy_pos_pids[i]), params.xy_p, 0.0f, params.xy_d, 1.0f, 0.0f);
 				/* use integral_limit_out = tilt_max / 2 */
 				float i_limit;
-
+				//Divide by zero bug?!
 				if (params.xy_vel_i == 0.0f) {
 					i_limit = params.tilt_max / params.xy_vel_i / 2.0f;
 
@@ -367,7 +368,7 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 					if (reset_sp_z) {
 						reset_sp_z = false;
 						local_pos_sp.z = local_pos.z;
-						mavlink_log_info(mavlink_fd, "[mpc] reset alt sp: %.2f", (double)-local_pos_sp.z);
+						mavlink_log_info(mavlink_fd, "[mpc] reset alt sp: %.2f", (double) - local_pos_sp.z);
 					}
 
 					/* move altitude setpoint with throttle stick */
@@ -440,12 +441,12 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 					if (reset_auto_pos) {
 						local_pos_sp.x = local_pos.x;
 						local_pos_sp.y = local_pos.y;
-						local_pos_sp.z = -takeoff_alt_default;
+						local_pos_sp.z = - params.takeoff_alt - params.takeoff_gap;
 						local_pos_sp.yaw = att.yaw;
 						local_pos_sp_valid = true;
 						att_sp.yaw_body = att.yaw;
 						reset_auto_pos = false;
-						mavlink_log_info(mavlink_fd, "[mpc] takeoff sp: %.2f %.2f %.2f", (double)local_pos_sp.x, (double)local_pos_sp.y, (double)-local_pos_sp.z);
+						mavlink_log_info(mavlink_fd, "[mpc] takeoff sp: %.2f %.2f %.2f", (double)local_pos_sp.x, (double)local_pos_sp.y, (double) - local_pos_sp.z);
 					}
 
 				} else if (control_mode.auto_state == NAVIGATION_STATE_AUTO_RTL) {
@@ -521,7 +522,7 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 						/* set altitude setpoint to 5m under ground,
 						 * don't set it too deep to avoid unexpected landing in case of false "landed" signal */
 						local_pos_sp.z = 5.0f;
-						mavlink_log_info(mavlink_fd, "[mpc] landed, set alt: %.2f", (double)-local_pos_sp.z);
+						mavlink_log_info(mavlink_fd, "[mpc] landed, set alt: %.2f", (double) - local_pos_sp.z);
 					}
 
 					reset_sp_z = true;
@@ -531,7 +532,7 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 					if (reset_sp_z) {
 						reset_sp_z = false;
 						local_pos_sp.z = local_pos.z;
-						mavlink_log_info(mavlink_fd, "[mpc] set loiter alt: %.2f", (double)-local_pos_sp.z);
+						mavlink_log_info(mavlink_fd, "[mpc] set loiter alt: %.2f", (double) - local_pos_sp.z);
 					}
 				}
 
