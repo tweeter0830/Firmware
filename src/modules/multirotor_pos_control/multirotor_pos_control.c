@@ -265,34 +265,35 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 		pid_init(&(xy_pos_pids[i]), params.xy_p, 0.0f, params.xy_d, 1.0f, 0.0f, PID_MODE_DERIVATIV_SET, 0.02f);
 		pid_init(&(xy_vel_pids[i]), params.xy_vel_p, params.xy_vel_i, params.xy_vel_d, 1.0f, params.tilt_max, PID_MODE_DERIVATIV_CALC_NO_SP, 0.02f);
 	}
-
+        // Use P&d control with a given derivative for Z position control
 	pid_init(&z_pos_pid, params.z_p, 0.0f, params.z_d, 1.0f, params.z_vel_max, PID_MODE_DERIVATIV_SET, 0.02f);
+	// use a PID that is adjusted foe altitude
 	thrust_pid_init(&z_vel_pid, params.z_vel_p, params.z_vel_i, params.z_vel_d, -params.thr_max, -params.thr_min, PID_MODE_DERIVATIV_CALC_NO_SP, 0.02f);
 
 	while (!thread_should_exit) {
-
+	  
 		bool param_updated;
-		orb_check(param_sub, &param_updated);
-
+		orb_check(param_sub, &param_updated); //check if the parameters have been updated
+		
 		if (param_updated) {
 			/* clear updated flag */
 			struct parameter_update_s ps;
 			orb_copy(ORB_ID(parameter_update), param_sub, &ps);
 			/* update params */
 			parameters_update(&params_h, &params);
-
+			
 			for (int i = 0; i < 2; i++) {
 				pid_set_parameters(&(xy_pos_pids[i]), params.xy_p, 0.0f, params.xy_d, 1.0f, 0.0f);
 				/* use integral_limit_out = tilt_max / 2 */
 				float i_limit;
-
+				//Divide by zero bug?!
 				if (params.xy_vel_i == 0.0f) {
 					i_limit = params.tilt_max / params.xy_vel_i / 2.0f;
 
 				} else {
 					i_limit = 1.0f;	// not used really
 				}
-
+				
 				pid_set_parameters(&(xy_vel_pids[i]), params.xy_vel_p, params.xy_vel_i, params.xy_vel_d, i_limit, params.tilt_max);
 			}
 
@@ -301,7 +302,7 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 		}
 
 		bool updated;
-
+		
 		orb_check(control_mode_sub, &updated);
 
 		if (updated) {
@@ -318,7 +319,7 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 
 		hrt_abstime t = hrt_absolute_time();
 		float dt;
-
+		
 		if (t_prev != 0) {
 			dt = (t - t_prev) * 0.000001f;
 
