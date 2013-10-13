@@ -38,7 +38,7 @@
  */
 
 #include "../ecl.h"
-#include "Multirotor_Attitude_Control_H_Infi.hpp"
+#include "multirotor_attitude_control_h_infi.hpp"
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
@@ -104,7 +104,7 @@ void Multirotor_Attitude_Control_H_Infi::make_C(const State& St, const State& Ra
 	float cos_R=cos(St.r);
 	float sin_P=sin(St.p);
 	float cos_P=cos(St.p);
-	float long_factor = Rate.p*cos_R*sin_R + Rate.y*sin_R*sin_R*cos_p;
+	float long_factor = Rate.p*cos_R*sin_R + Rate.y*sin_R*sin_R*cos_P;
 	//First Row
 	C_vals[0][0]=0;
 	C_vals[0][1]=(_Iyy-_Izz)*(long_factor) + 
