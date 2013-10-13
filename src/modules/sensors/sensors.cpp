@@ -1224,6 +1224,9 @@ Sensors::parameter_update_poll(bool forced)
 void
 Sensors::adc_poll(struct sensor_combined_s &raw)
 {
+	/* only read if publishing */
+	if (!_publishing)
+		return;
 
 	/* rate limit to 100 Hz */
 	if (hrt_absolute_time() - _last_adc >= 10000) {
@@ -1516,8 +1519,7 @@ Sensors::task_main()
 {
 
 	/* inform about start */
-	printf("[sensors] Initializing..\n");
-	fflush(stdout);
+	warnx("Initializing..");
 
 	/* start individual sensors */
 	accel_init();

@@ -145,7 +145,9 @@ volatile uint16_t	r_page_setup[] =
 	[PX4IO_P_SETUP_PWM_RATES]		= 0,
 	[PX4IO_P_SETUP_PWM_DEFAULTRATE]		= 50,
 	[PX4IO_P_SETUP_PWM_ALTRATE]		= 200,
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
 	[PX4IO_P_SETUP_RELAYS]			= 0,
+#endif
 #ifdef ADC_VSERVO
 	[PX4IO_P_SETUP_VSERVO_SCALE]		= 10000,
 #else
@@ -462,22 +464,16 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 			pwm_configure_rates(r_setup_pwm_rates, r_setup_pwm_defaultrate, value);
 			break;
 
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
 		case PX4IO_P_SETUP_RELAYS:
 			value &= PX4IO_P_SETUP_RELAYS_VALID;
 			r_setup_relays = value;
-#ifdef POWER_RELAY1
 			POWER_RELAY1((value & PX4IO_P_SETUP_RELAYS_POWER1) ? 1 : 0);
-#endif
-#ifdef POWER_RELAY2
 			POWER_RELAY2((value & PX4IO_P_SETUP_RELAYS_POWER2) ? 1 : 0);
-#endif
-#ifdef POWER_ACC1
 			POWER_ACC1((value & PX4IO_P_SETUP_RELAYS_ACC1) ? 1 : 0);
-#endif
-#ifdef POWER_ACC2
 			POWER_ACC2((value & PX4IO_P_SETUP_RELAYS_ACC2) ? 1 : 0);
-#endif
 			break;
+#endif
 
 		case PX4IO_P_SETUP_VBATT_SCALE:
 			r_page_setup[PX4IO_P_SETUP_VBATT_SCALE] = value;
@@ -678,27 +674,25 @@ registers_get(uint8_t page, uint8_t offset, uint16_t **values, unsigned *num_val
 #ifdef ADC_VSERVO
 		/* PX4IO_P_STATUS_VSERVO */
 		{
-			/*
-			 * Coefficients here derived by measurement of the 5-16V
-			 * range on one unit:
-			 *
-			 * XXX pending measurements
-			 *
-			 * slope = xxx
-			 * intercept = xxx
-			 *
-			 * Intercept corrected for best results @ 5.0V.
-			 */
 			unsigned counts = adc_measure(ADC_VSERVO);
 			if (counts != 0xffff) {
-				unsigned mV = (4150 + (counts * 46)) / 10 - 200;
-				unsigned corrected = (mV * r_page_setup[PX4IO_P_SETUP_VSERVO_SCALE]) / 10000;
-
-				r_page_status[PX4IO_P_STATUS_VSERVO] = corrected;
+				// use 3:1 scaling on 3.3V ADC input
+				unsigned mV = counts * 9900 / 4096;
+				r_page_status[PX4IO_P_STATUS_VSERVO] = mV;
 			}
 		}
 #endif
-		/* XXX PX4IO_P_STATUS_VRSSI */
+#ifdef ADC_RSSI
+		/* PX4IO_P_STATUS_VRSSI */
+		{
+			unsigned counts = adc_measure(ADC_RSSI);
+			if (counts != 0xffff) {
+				// use 1:1 scaling on 3.3V ADC input
+				unsigned mV = counts * 3300 / 4096;
+				r_page_status[PX4IO_P_STATUS_VRSSI] = mV;
+			}
+		}
+#endif
 		/* XXX PX4IO_P_STATUS_PRSSI */
 
 		SELECT_PAGE(r_page_status);

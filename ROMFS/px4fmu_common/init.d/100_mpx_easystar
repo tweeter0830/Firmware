@@ -8,7 +8,27 @@ echo "[init] PX4FMU v1, v2 with or without IO on EasyStar"
 if param compare SYS_AUTOCONFIG 1
 then
 	# Set all params here, then disable autoconfig
-	# TODO
+	param set FW_P_D 0
+	param set FW_P_I 0
+	param set FW_P_IMAX 15
+	param set FW_P_LIM_MAX 50
+	param set FW_P_LIM_MIN -50
+	param set FW_P_P 60
+	param set FW_P_RMAX_NEG 0
+	param set FW_P_RMAX_POS 0
+	param set FW_P_ROLLFF 1.1
+	param set FW_R_D 0
+	param set FW_R_I 5
+	param set FW_R_IMAX 20
+	param set FW_R_P 100
+	param set FW_R_RMAX 100
+	param set FW_THR_CRUISE 0.65
+	param set FW_THR_MAX 1
+	param set FW_THR_MIN 0
+	param set FW_T_SINK_MAX 5.0
+	param set FW_T_SINK_MIN 4.0
+	param set FW_Y_ROLLFF 1.1
+	param set FW_L1_PERIOD 16
 	
 	param set SYS_AUTOCONFIG 0
 	param save
@@ -29,7 +49,8 @@ if px4io detect
 then
 	# Start MAVLink (depends on orb)
 	mavlink start
-	usleep 5000
+
+	commander start
 
 	sh /etc/init.d/rc.io
 	# Limit to 100 Hz updates and (implicit) 50 Hz PWM
@@ -37,12 +58,14 @@ then
 else
 	# Start MAVLink (on UART1 / ttyS0)
 	mavlink start -d /dev/ttyS0
-	usleep 5000
+
+	commander start
+
 	fmu mode_pwm
 	param set BAT_V_SCALING 0.004593
 	set EXIT_ON_END yes
 fi
- 
+
 #
 # Start the sensors and test them.
 #
@@ -52,11 +75,6 @@ sh /etc/init.d/rc.sensors
 # Start logging (depends on sensors)
 #
 sh /etc/init.d/rc.logging
-
-#
-# Start the commander.
-#
-commander start
 
 #
 # Start GPS interface (depends on orb)
@@ -71,7 +89,14 @@ att_pos_estimator_ekf start
 #
 # Load mixer and start controllers (depends on px4io)
 #
-mixer load /dev/pwm_output /etc/mixers/FMU_RET.mix
+if [ -f /fs/microsd/etc/mixers/FMU_RET.mix ]
+then
+	echo "Using FMU_RET mixer from sd card"
+	mixer load /dev/pwm_output /fs/microsd/etc/mixers/FMU_RET.mix
+else
+	echo "Using standard FMU_RET mixer"
+	mixer load /dev/pwm_output /etc/mixers/FMU_RET.mix
+fi
 fw_att_control start
 # Not ready yet for prime-time
 #fw_pos_control_l1 start

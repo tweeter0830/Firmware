@@ -367,7 +367,6 @@ out:
 int
 L3GD20::probe()
 {
-	irqstate_t flags = irqsave();
 	/* read dummy value to void to clear SPI statemachine on sensor */
 	(void)read_reg(ADDR_WHO_AM_I);
 
@@ -392,8 +391,6 @@ L3GD20::probe()
 		_orientation = SENSOR_BOARD_ROTATION_180_DEG;
 		success = true;
 	}
-
-	irqrestore(flags);
 
 	if (success)
 		return OK;
@@ -774,6 +771,7 @@ L3GD20::measure()
 	 *		  74 from all measurements centers them around zero.
 	 */
 	report.timestamp = hrt_absolute_time();
+        report.error_count = 0; // not recorded
 	
 	switch (_orientation) {
 

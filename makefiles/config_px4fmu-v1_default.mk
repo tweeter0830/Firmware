@@ -63,6 +63,7 @@ MODULES		+= systemcmds/nshterm
 # General system control
 #
 MODULES		+= modules/commander
+MODULES		+= modules/navigator
 MODULES		+= modules/mavlink
 MODULES		+= modules/mavlink_onboard
 MODULES		+= modules/gpio_led
@@ -79,7 +80,7 @@ MODULES		+= examples/flow_position_estimator
 # Vehicle Control
 #
 #MODULES		+= modules/segway # XXX needs state machine update
-#MODULES		+= modules/fw_pos_control_l1
+MODULES		+= modules/fw_pos_control_l1
 MODULES		+= modules/fw_att_control
 MODULES		+= modules/multirotor_att_control
 MODULES		+= modules/multirotor_pos_control
@@ -112,6 +113,7 @@ LIBRARIES	+= lib/mathlib/CMSIS
 MODULES		+= lib/mathlib
 MODULES		+= lib/mathlib/math/filter
 MODULES		+= lib/ecl
+MODULES		+= lib/external_lgpl
 MODULES		+= lib/geo
 
 #

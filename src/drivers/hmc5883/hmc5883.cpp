@@ -791,6 +791,7 @@ HMC5883::collect()
 
 	/* this should be fairly close to the end of the measurement, so the best approximation of the time */
 	new_report.timestamp = hrt_absolute_time();
+        new_report.error_count = perf_event_count(_comms_errors);
 
 	/*
 	 * @note  We could read the status register here, which could tell us that
@@ -1291,10 +1292,6 @@ test()
 
 	if (fd < 0)
 		err(1, "%s open failed (try 'hmc5883 start' if the driver is not running", MAG_DEVICE_PATH);
-
-	/* set the queue depth to 10 */
-	if (OK != ioctl(fd, SENSORIOCSQUEUEDEPTH, 10))
-		errx(1, "failed to set queue depth");
 
 	/* do a simple demand read */
 	sz = read(fd, &report, sizeof(report));

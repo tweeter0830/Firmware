@@ -29,7 +29,8 @@ if px4io detect
 then
 	# Start MAVLink (depends on orb)
 	mavlink start
-	usleep 5000
+
+	commander start
 
 	sh /etc/init.d/rc.io
 	# Limit to 100 Hz updates and (implicit) 50 Hz PWM
@@ -37,7 +38,9 @@ then
 else
 	# Start MAVLink (on UART1 / ttyS0)
 	mavlink start -d /dev/ttyS0
-	usleep 5000
+
+	commander start
+
 	fmu mode_pwm
 	param set BAT_V_SCALING 0.004593
 	set EXIT_ON_END yes
@@ -54,11 +57,6 @@ sh /etc/init.d/rc.sensors
 sh /etc/init.d/rc.logging
 
 #
-# Start the commander.
-#
-commander start
-
-#
 # Start GPS interface (depends on orb)
 #
 gps start
@@ -73,8 +71,7 @@ att_pos_estimator_ekf start
 #
 mixer load /dev/pwm_output /etc/mixers/FMU_Q.mix
 fw_att_control start
-# Not ready yet for prime-time
-#fw_pos_control_l1 start
+fw_pos_control_l1 start
 
 if [ $EXIT_ON_END == yes ]
 then
