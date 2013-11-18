@@ -51,6 +51,8 @@
  */
 
 #include "multirotor_attitude_control.h"
+#include "multirotor_attitude_control_h_infi.hpp"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -82,7 +84,7 @@ struct mc_att_control_h_infi_params {
 	float Ixx;
 	float Iyy;
 	float Izz;
-
+	/* XX Implement this */
 	float integral_max;
 };
 
@@ -164,9 +166,8 @@ void h_infi_wrapper(
 	}
 
 	static int motor_skip_counter = 0;
-
-	static PID_t pitch_controller;
-	static PID_t roll_controller;
+	
+	static Multirotor_Attitude_Control_H_Infi h_infi_controller;
 
 	static struct mc_att_control_h_infi_params p;
 	static struct mc_att_control_h_infi_param_handles h;
@@ -175,13 +176,13 @@ void h_infi_wrapper(
 
 	static float yaw_error;
 
-	/* initialize the pid controllers when the function is called for the first time */
+	/* initialize the controller when the function is called for the first time */
 	if (initialized == false) {
 		parameters_init(&h);
 		parameters_update(&h, &p);
 
-		pid_init(&pitch_controller, p.att_p, p.att_i, p.att_d, 1000.0f, 1000.0f, PID_MODE_DERIVATIV_SET, 0.0f);
-		pid_init(&roll_controller, p.att_p, p.att_i, p.att_d, 1000.0f, 1000.0f, PID_MODE_DERIVATIV_SET, 0.0f);
+		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
+		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
 
 		initialized = true;
 	}
@@ -191,20 +192,23 @@ void h_infi_wrapper(
 		/* update parameters from storage */
 		parameters_update(&h, &p);
 
-		/* apply parameters */
-		pid_set_parameters(&pitch_controller, p.att_p, p.att_i, p.att_d, 1000.0f, 1000.0f);
-		pid_set_parameters(&roll_controller, p.att_p, p.att_i, p.att_d, 1000.0f, 1000.0f);
+		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
+		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
 	}
 
 	/* reset integrals if needed */
 	if (reset_integral) {
-		pid_reset_integral(&pitch_controller);
-		pid_reset_integral(&roll_controller);
-		//TODO pid_reset_integral(&yaw_controller);
+		h_infi_controller.reset_integrator();
 	}
 
 	/* calculate current control outputs */
+	if( control_pos ){
+		h_infi_controller.set_mode(true,true,true);
+		
+	}else{
 
+
+	}
 	/* control pitch (forward) output */
 	rates_sp->pitch = pid_calculate(&pitch_controller, att_sp->pitch_body ,
 					att->pitch, att->pitchspeed, deltaT);

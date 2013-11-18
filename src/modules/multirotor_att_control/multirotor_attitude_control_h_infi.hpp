@@ -49,12 +49,7 @@ public:
 
 	void set_setpoints(const State& state,const State& rate,const State& accel);
 
-	void set_time_constant(float time_constant) {
-		if (time_constant > 0.1f && time_constant < 3.0f) {
-			_tc = time_constant;
-		}
-	}
-	void set_weights(float w_error, float w_int, float w_deriv, float w_torque){
+	void set_weights(float w_deriv, float w_error, float w_int, float w_torque){
 		_weight_error_state = w_error;
 		_weight_error_integral = w_int;
 		_weight_error_deriv = w_deriv;
