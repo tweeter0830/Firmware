@@ -62,20 +62,16 @@
 #include <systemlib/param/param.h>
 #include <drivers/drv_hrt.h>
 
-PARAM_DEFINE_FLOAT(MC_YAWPOS_P, 2.0f);
-PARAM_DEFINE_FLOAT(MC_YAWPOS_I, 0.15f);
-PARAM_DEFINE_FLOAT(MC_YAWPOS_D, 0.0f);
-//PARAM_DEFINE_FLOAT(MC_YAWPOS_AWU, 1.0f);
-//PARAM_DEFINE_FLOAT(MC_YAWPOS_LIM, 3.0f);
+PARAM_DEFINE_FLOAT("MC_H_WEIGHT_R", 1.0f)
+PARAM_DEFINE_FLOAT("MC_H_WEIGHT_P", 1.0f)
+PARAM_DEFINE_FLOAT("MC_H_WEIGHT_I", 1.0f)
+PARAM_DEFINE_FLOAT("MC_H_WEIGHT_U", 1.0f)
 
-PARAM_DEFINE_FLOAT(MC_ATT_P, 6.8f);
-PARAM_DEFINE_FLOAT(MC_ATT_I, 0.0f);
-PARAM_DEFINE_FLOAT(MC_ATT_D, 0.0f);
-//PARAM_DEFINE_FLOAT(MC_ATT_AWU, 0.05f);
-//PARAM_DEFINE_FLOAT(MC_ATT_LIM, 0.4f);
+PARAM_DEFINE_FLOAT("MC_H_IXX", 1.0f);	   
+PARAM_DEFINE_FLOAT("MC_H_IYY", 1.0f);	   
+PARAM_DEFINE_FLOAT("MC_H_IZZ", 1.0f);	   
 
-//PARAM_DEFINE_FLOAT(MC_ATT_XOFF, 0.0f);
-//PARAM_DEFINE_FLOAT(MC_ATT_YOFF, 0.0f);
+PARAM_DEFINE_FLOAT("MC_H_INT_MAX", 1.0f);
 
 struct mc_att_control_h_infi_params {
 	float w_rate;
@@ -83,90 +79,68 @@ struct mc_att_control_h_infi_params {
 	float w_integral;
 	float w_control;
 
-	float i_xx;
-	float i_yy;
-	float i_zz;
+	float Ixx;
+	float Iyy;
+	float Izz;
 
-	//float yaw_awu;
-	//float yaw_lim;
-
-	float att_p;
-	float att_i;
-	float att_d;
-	//float att_awu;
-	//float att_lim;
-
-	//float att_xoff;
-	//float att_yoff;
+	float integral_max;
 };
 
-struct mc_att_control_param_handles {
-	param_t yaw_p;
-	param_t yaw_i;
-	param_t yaw_d;
-	//param_t yaw_awu;
-	//param_t yaw_lim;
+struct mc_att_control_h_infi_params_handles {
+	param_t w_rate;
+	param_t w_position;
+	param_t w_integral;
+	param_t w_control;
 
-	param_t att_p;
-	param_t att_i;
-	param_t att_d;
-	//param_t att_awu;
-	//param_t att_lim;
+	param_t Ixx;
+	param_t Iyy;
+	param_t Izz;
 
-	//param_t att_xoff;
-	//param_t att_yoff;
+	param_t integral_max;
 };
 
 /**
  * Initialize all parameter handles and values
  *
  */
-static int parameters_init(struct mc_att_control_param_handles *h);
+static int parameters_init(struct mc_att_control_h_infi_param_handles *h);
 
 /**
  * Update all parameters
  *
  */
-static int parameters_update(const struct mc_att_control_param_handles *h, struct mc_att_control_params *p);
+static int parameters_update(const struct mc_att_control_h_infi_param_handles *h, struct mc_att_control_h_infi_params *p);
 
 
 static int parameters_init(struct mc_att_control_param_handles *h)
 {
-	/* PID parameters */
-	h->yaw_p 	=	param_find("MC_YAWPOS_P");
-	h->yaw_i 	=	param_find("MC_YAWPOS_I");
-	h->yaw_d 	=	param_find("MC_YAWPOS_D");
-	//h->yaw_awu 	=	param_find("MC_YAWPOS_AWU");
-	//h->yaw_lim 	=	param_find("MC_YAWPOS_LIM");
-
-	h->att_p 	= 	param_find("MC_ATT_P");
-	h->att_i 	= 	param_find("MC_ATT_I");
-	h->att_d 	= 	param_find("MC_ATT_D");
-	//h->att_awu 	= 	param_find("MC_ATT_AWU");
-	//h->att_lim 	= 	param_find("MC_ATT_LIM");
-
-	//h->att_xoff 	= 	param_find("MC_ATT_XOFF");
-	//h->att_yoff 	= 	param_find("MC_ATT_YOFF");
+	/* Control Weight Parameters */
+	h->w_rate 	=	param_find("MC_H_WEIGHT_R");
+	h->w_position 	=	param_find("MC_H_WEIGHT_P");
+	h->w_integral 	=	param_find("MC_H_WEIGHT_I");
+	h->w_control    =       param_find("MC_H_WEIGHT_U");
+	/* Moment of inertia parameters */                 
+	h->Ixx  	= 	param_find("MC_H_IXX");	   
+	h->Iyy  	= 	param_find("MC_H_IYY");	   
+	h->Izz  	= 	param_find("MC_H_IZZ");	   
+	/* Integral parameters */	                   
+	h->integral_max =	param_find("MC_H_INT_MAX");
 
 	return OK;
 }
 
-static int parameters_update(const struct mc_att_control_param_handles *h, struct mc_att_control_params *p)
+static int parameters_update(const struct mc_att_control_h_infi_param_handles *h, struct mc_att_control_h_infi_params *p)
 {
-	param_get(h->yaw_p, &(p->yaw_p));
-	param_get(h->yaw_i, &(p->yaw_i));
-	param_get(h->yaw_d, &(p->yaw_d));
-	//param_get(h->yaw_awu, &(p->yaw_awu));
-	//param_get(h->yaw_lim, &(p->yaw_lim));
+	param_get(h->w_rate, &(p->w_rate));
+	param_get(h->w_position, &(p->w_position));
+	param_get(h->w_integral, &(p->w_integral));
+	param_get(h->w_control, &(p->w_control));
 
-	param_get(h->att_p, &(p->att_p));
-	param_get(h->att_i, &(p->att_i));
-	param_get(h->att_d, &(p->att_d));
-	//param_get(h->att_awu, &(p->att_awu));
-	//param_get(h->att_lim, &(p->att_lim));
+	param_get(h->Ixx, &(p->Ixx));
+	param_get(h->Iyy, &(p->Iyy));
+	param_get(h->Izz, &(p->Izz));
 
-	//param_get(h->att_xoff, &(p->att_xoff));
-	//param_get(h->att_yoff, &(p->att_yoff));
+	param_get(h->integral_max, &(p->integral_max));
 
 	return OK;
 }
@@ -194,8 +168,8 @@ void h_infi_wrapper(
 	static PID_t pitch_controller;
 	static PID_t roll_controller;
 
-	static struct mc_att_control_params p;
-	static struct mc_att_control_param_handles h;
+	static struct mc_att_control_h_infi_params p;
+	static struct mc_att_control_h_infi_param_handles h;
 
 	static bool initialized = false;
 
