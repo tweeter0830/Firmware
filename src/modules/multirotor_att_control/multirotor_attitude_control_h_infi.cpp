@@ -17,38 +17,40 @@ typedef vmml::matrix< 3, 3, float> Matrix;
 typedef vmml::vector<3,float> Vector;
 
 Multirotor_Attitude_Control_H_Infi::Multirotor_Attitude_Control_H_Infi() {
-	_last_run = 0;
-	_tc = 0.1f;
-	_weight_error_deriv = 1;
-	_weight_error_state = 1;
+	_last_run	       = 0;
+	_tc		       = 0.1f;
+	_weight_error_deriv    = 1;
+	_weight_error_state    = 1;
 	_weight_error_integral = 1;
-	_weight_torque = 1;
-	_Ixx =1;
-	_Iyy =1;
-	_Izz =1;
-	_old_time = 0;
-	_setpoint_state = State();
-	_setpoint_rate = State();
-	_setpoint_accel = State();
-	_integral(0)=0.0f;
-	_integral(1)=0.0f;
-	_integral(2)=0.0f;
-	_int_sat = 10.0f;
-	_modes_set = false;
-	_state_track = true;
-	_rate_track = true;
-	_accel_track= true;
+	_weight_torque	       = 1;
+	_Ixx		       = 1;
+	_Iyy		       = 1;
+	_Izz		       = 1;
+	_old_time	       = 0;
+	_setpoint_state	       = State();
+	_setpoint_rate	       = State();
+	_setpoint_accel	       = State();
+	_integral(0)	       = 0.0f;
+	_integral(1)	       = 0.0f;
+	_integral(2)	       = 0.0f;
+	_int_sat	       = 10.0f;
+	_modes_set	       = false;
+	_state_track	       = true;
+	_rate_track	       = true;
+	_accel_track	       = true;
+	_yaw_track	       = true;
 }
 
-void Multirotor_Attitude_Control_H_Infi::set_mode(bool state_track, bool rate_track, bool accel_track){
+void Multirotor_Attitude_Control_H_Infi::set_mode(bool state_track, bool rate_track, bool accel_track, bool yaw_track){
 	_state_track = state_track;
-	_rate_track = rate_track;
-	_accel_track= accel_track;
-	_modes_set = true;
+	_rate_track  = rate_track;
+	_accel_track = accel_track;
+	_yaw_track   = yaw_track;
+	_modes_set   = true;
 }
 void Multirotor_Attitude_Control_H_Infi::set_setpoints(const State& state,const State& rate,const State& accel) {
 	_setpoint_state = state;
-	_setpoint_rate = rate;
+	_setpoint_rate	= rate;
 	_setpoint_accel = accel;
 }
 bool Multirotor_Attitude_Control_H_Infi::control(const State& meas_state, const State& meas_rate, State& torque_out, double time) {
@@ -112,6 +114,10 @@ bool Multirotor_Attitude_Control_H_Infi::control(const State& meas_state, const 
 	std::cout << "control_accel " << control_accel << std::endl;
 	std::cout << "control_torque "<< control_torque<< std::endl;
 	#endif
+	if( !_yaw_track ){
+		integral(2)	  = 0;
+		control_torque(2) = 0;
+	}
 	torque_out.r = control_torque(0);
 	torque_out.p = control_torque(1);
 	torque_out.y = control_torque(2);
@@ -133,9 +139,9 @@ void Multirotor_Attitude_Control_H_Infi::calc_gains(const Matrix& M,const Matrix
 	Matrix Dynamics_weights = M_inv*( C+I*( 1.0f/(w_u*w_u) ) );
 	float long_expr = std::sqrt(w_2*w_2 + 2.0f*w_1*w_3)/w_1;
 	
-	k_d=(I*long_expr)+Dynamics_weights;
-	k_p=I*(w_3/w_1)+Dynamics_weights*long_expr;
-	k_i=Dynamics_weights*(w_3/w_1);
+	k_d = (I*long_expr)+Dynamics_weights;
+	k_p = I*(w_3/w_1)+Dynamics_weights*long_expr;
+	k_i = Dynamics_weights*(w_3/w_1);
 	#ifdef DEBUG
 	std::cout<< "Calculated Gains:---------"<< std::endl;
 	std::cout<< "I\n" << I << std::endl;

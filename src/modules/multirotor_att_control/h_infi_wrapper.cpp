@@ -200,45 +200,18 @@ void h_infi_wrapper(
 	if (reset_integral) {
 		h_infi_controller.reset_integrator();
 	}
-
+	Multirotor_Attitude_Control_H_Infi::State meas_state, meas_rate, torque_out;
+	meas_state.r = att->roll;
+	meas_state.p = att->pitch;
+	meas_state.y = att->yaw;
+	meas_rate.r = att->rollspeed;
+	meas_rate.p = att->pitchspeed;
+	meas_rate.y = att->yawspeed;
 	/* calculate current control outputs */
-	if( control_pos ){
-		h_infi_controller.set_mode(true,true,true);
-		
-	}else{
+	h_infi_controller.set_mode(control_pos, true, true, control_yaw_position);		
 
-
-	}
-	/* control pitch (forward) output */
-	rates_sp->pitch = pid_calculate(&pitch_controller, att_sp->pitch_body ,
-					att->pitch, att->pitchspeed, deltaT);
-
-	/* control roll (left/right) output */
-	rates_sp->roll = pid_calculate(&roll_controller, att_sp->roll_body ,
-				       att->roll, att->rollspeed, deltaT);
-
-	if (control_yaw_position) {
-		/* control yaw rate */
-		// TODO use pid lib
-
-		/* positive error: rotate to right, negative error, rotate to left (NED frame) */
-		// yaw_error = _wrap_pi(att_sp->yaw_body - att->yaw);
-
-		yaw_error = att_sp->yaw_body - att->yaw;
-
-		if (yaw_error > M_PI_F) {
-			yaw_error -= M_TWOPI_F;
-
-		} else if (yaw_error < -M_PI_F) {
-			yaw_error += M_TWOPI_F;
-		}
-
-		rates_sp->yaw = p.yaw_p * (yaw_error) - (p.yaw_d * att->yawspeed);
-	}
-
-	rates_sp->thrust = att_sp->thrust;
-    //need to update the timestamp now that we've touched rates_sp
-    rates_sp->timestamp = hrt_absolute_time();
+	//need to update the timestamp now that we've touched rates_sp
+	rates_sp->timestamp = hrt_absolute_time();
 
 	motor_skip_counter++;
 }

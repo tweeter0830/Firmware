@@ -45,7 +45,7 @@ public:
 
 	void reset_integrator();
 
-	void set_mode(bool state_track, bool rate_track, bool accel_track);
+	void set_mode(bool state_track, bool rate_track, bool accel_track, bool yaw_track);
 
 	void set_setpoints(const State& state,const State& rate,const State& accel);
 
@@ -100,6 +100,7 @@ private:
 	bool _state_track;
 	bool _rate_track;
 	bool _accel_track;
+	bool _yaw_track;
 	float _int_sat;
 
 	Vector _integral;
