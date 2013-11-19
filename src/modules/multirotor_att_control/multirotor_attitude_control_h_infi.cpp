@@ -89,6 +89,9 @@ bool Multirotor_Attitude_Control_H_Infi::control(const State& meas_state, const 
 	} else {
 		setpoint_accel = Vector::ZERO;
 	}
+	if( !_yaw_track ){
+		error_state(2)=0;
+	}
 	Vector meas_rate_vect;
 	meas_rate_vect(0)=meas_state.r;
 	meas_rate_vect(1)=meas_state.p;
@@ -99,6 +102,9 @@ bool Multirotor_Attitude_Control_H_Infi::control(const State& meas_state, const 
 	std::cout << "setpoint_accel " << setpoint_accel << std::endl;
 	#endif
 	_integral = _integral + error_state*dt;
+	if( !_yaw_track ){
+		_integral(2) = 0;
+	}
 	for( int i = 0; i < 3; i++ ){
 		if( _integral(i) > _int_sat )
 			_integral(i) = _int_sat;
@@ -114,10 +120,6 @@ bool Multirotor_Attitude_Control_H_Infi::control(const State& meas_state, const 
 	std::cout << "control_accel " << control_accel << std::endl;
 	std::cout << "control_torque "<< control_torque<< std::endl;
 	#endif
-	if( !_yaw_track ){
-		integral(2)	  = 0;
-		control_torque(2) = 0;
-	}
 	torque_out.r = control_torque(0);
 	torque_out.p = control_torque(1);
 	torque_out.y = control_torque(2);
