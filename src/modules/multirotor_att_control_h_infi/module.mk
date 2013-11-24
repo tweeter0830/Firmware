@@ -32,7 +32,7 @@
 ############################################################################
 
 #
-# Build multirotor attitude controller
+# Build the nonlinear h infinity multirotor attitude controller
 #
 
 MODULE_COMMAND	= multirotor_att_control_h_infi
