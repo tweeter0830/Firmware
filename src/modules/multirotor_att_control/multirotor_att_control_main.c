@@ -333,7 +333,7 @@ mc_thread_main(int argc, char *argv[])
 
 			/* check if we should we reset integrals */
 			bool reset_integral = !control_mode.flag_armed || att_sp.thrust < 0.1f;	// TODO use landed status instead of throttle
-			
+
 			/* run attitude controller if needed */
 			if (control_mode.flag_control_attitude_enabled) {
 				multirotor_control_attitude(&att_sp, &att, &rates_sp, control_yaw_position, reset_integral);
