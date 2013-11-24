@@ -58,7 +58,6 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_attitude_setpoint.h>
-#include <uORB/topics/vehicle_rates.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/actuator_controls.h>
 
@@ -66,7 +65,7 @@ void h_infi_wrapper(
 	const struct vehicle_attitude_setpoint_s	*att_sp,
 	const struct vehicle_attitude_s			*att,
 	const struct vehicle_rates_setpoint_s		*rates_sp,
-	const struct vehicle_rates_s			*rates,
+	const float rates[]			        *rates,
 	bool						 control_pos,
 	bool						 control_yaw, 
 	bool						 reset_integral);

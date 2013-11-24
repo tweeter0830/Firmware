@@ -34,7 +34,7 @@
  ****************************************************************************/
 
 /**
- * @file multirotor_att_control_main.c
+ * @file multirotor_att_control_h_infi_main.c
  *
  * Implementation of multirotor attitude control main loop.
  *
@@ -77,7 +77,7 @@
 #include "multirotor_attitude_control.h"
 #include "multirotor_rate_control.h"
 
-__EXPORT int multirotor_att_control_main(int argc, char *argv[]);
+__EXPORT int multirotor_att_control_h_infi_main(int argc, char *argv[]);
 
 static bool thread_should_exit;
 static int mc_task;
@@ -334,15 +334,9 @@ mc_thread_main(int argc, char *argv[])
 			/* check if we should we reset integrals */
 			bool reset_integral = !control_mode.flag_armed || att_sp.thrust < 0.1f;	// TODO use landed status instead of throttle
 			
-			/* run attitude controller if needed */
-			if (control_mode.flag_control_attitude_enabled) {
-				multirotor_control_attitude(&att_sp, &att, &rates_sp, control_yaw_position, reset_integral);
-				orb_publish(ORB_ID(vehicle_rates_setpoint), rates_sp_pub, &rates_sp);
-			}
-
 			/* measure in what intervals the controller runs */
 			perf_count(mc_interval_perf);
-
+			
 			/* run rates controller if needed */
 			if (control_mode.flag_control_rates_enabled) {
 				/* get current rate setpoint */
@@ -352,14 +346,14 @@ mc_thread_main(int argc, char *argv[])
 				if (rates_sp_updated) {
 					orb_copy(ORB_ID(vehicle_rates_setpoint), vehicle_rates_setpoint_sub, &rates_sp);
 				}
-
-				/* apply controller */
-				float rates[3];
-				rates[0] = att.rollspeed;
-				rates[1] = att.pitchspeed;
-				rates[2] = att.yawspeed;
-				multirotor_control_rates(&rates_sp, rates, &actuators, reset_integral);
-
+				h_infi_wrapper(
+					&att_sp,
+					&att,
+					&rates_sp,
+//					&rates,
+					control_mode.flag_control_attitude_enabled,
+					control_yaw_position,
+					reset_integral);
 			} else {
 				/* rates controller disabled, set actuators to zero for safety */
 				actuators.control[0] = 0.0f;
@@ -414,7 +408,7 @@ usage(const char *reason)
 	exit(1);
 }
 
-int multirotor_att_control_main(int argc, char *argv[])
+int multirotor_att_control_h_infi_main(int argc, char *argv[])
 {
 	int	ch;
 	unsigned int optioncount = 0;
@@ -446,7 +440,7 @@ int multirotor_att_control_main(int argc, char *argv[])
 	if (!strcmp(argv[1 + optioncount], "start")) {
 
 		thread_should_exit = false;
-		mc_task = task_spawn_cmd("multirotor_att_control",
+		mc_task = task_spawn_cmd("multirotor_att_control_h_infi",
 					 SCHED_DEFAULT,
 					 SCHED_PRIORITY_MAX - 15,
 					 2048,
