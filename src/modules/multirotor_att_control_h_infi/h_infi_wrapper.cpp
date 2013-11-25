@@ -50,7 +50,6 @@
  * @author Lorenz Meier <lm@inf.ethz.ch>
  */
 
-#include "multirotor_attitude_control.h"
 #include "multirotor_attitude_control_h_infi.hpp"
 
 #include <stdio.h>

@@ -74,8 +74,8 @@
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
 
-#include "multirotor_attitude_control.h"
-#include "multirotor_rate_control.h"
+#include "h_infi_wrapper.h"
+//#include "multirotor_rate_control.h"
 
 __EXPORT int multirotor_att_control_h_infi_main(int argc, char *argv[]);
 
