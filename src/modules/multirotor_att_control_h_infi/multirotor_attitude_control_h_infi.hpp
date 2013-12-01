@@ -10,18 +10,21 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <vmmlib/matrix.hpp>
-#include <vmmlib/vector.hpp>
+//#include "Matrix.hpp"
+#include <mathlib/math/Matrix.hpp>
+#include <mathlib/math/Vector3.hpp>
 
-typedef vmml::matrix< 3, 3, float> Matrix;
-typedef vmml::vector<3,float> Vector;
+//#include <vmmlib/matrix.hpp>
+//#include <vmmlib/vector.hpp>
+
+typedef math::Matrix  Matrix;
+typedef math::Vector3  Vector;
 
 // #if !defined(CONFIG_ARCH_CORTEXM4) && !defined(CONFIG_ARCH_FPU)
 // typedef long long uint64_t;
 // #endif
 
-using namespace vmml;
-
+//namespace math{
 // TODO: scale the integral to timestep
 class Multirotor_Attitude_Control_H_Infi{ //__EXPORT
 public:
@@ -103,15 +106,18 @@ private:
 	bool _yaw_track;
 	float _int_sat;
 
-	Vector _integral;
+        Vector _integral;
 	Matrix _M;
-	Matrix _M_inv;
+        Matrix _M_inv;
 	Matrix _Cor;
+	//Matrix _M;
+	//Matrix _M_inv;
+	//Matrix _Cor;
 	double _old_time;
 
 	void calc_gains(const Matrix& M,const Matrix& C, Matrix& k_p, Matrix& k_i, Matrix& k_d);
 	void make_M(const State& St, Matrix& M);
 	void make_C(const State& St, const State& Rate, Matrix& C);
 };
-
+//}//namespace math
 #endif // MULTIROTOR_ATTITUDE_CONTROL_H_INFI_H
