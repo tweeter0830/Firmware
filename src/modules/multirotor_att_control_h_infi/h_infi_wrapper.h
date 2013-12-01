@@ -65,7 +65,7 @@ void h_infi_wrapper(
 	const struct vehicle_attitude_setpoint_s	*att_sp,
 	const struct vehicle_attitude_s			*att,
 	const struct vehicle_rates_setpoint_s		*rates_sp,
-	const float rates[]			        *rates,
+//	const float			                *rates,
 	bool						 control_pos,
 	bool						 control_yaw, 
 	bool						 reset_integral);
