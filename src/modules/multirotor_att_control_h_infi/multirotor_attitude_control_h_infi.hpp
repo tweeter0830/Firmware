@@ -11,9 +11,11 @@
 #include <stdint.h>
 
 //#include "Matrix.hpp"
-#include <mathlib/math/Matrix.hpp>
-#include <mathlib/math/Vector3.hpp>
+//#include <mathlib/math/Matrix.hpp>
+//#include <mathlib/math/Vector3.hpp>
 
+#include "Matrix.hpp"
+#include "Vector3.hpp"
 //#include <vmmlib/matrix.hpp>
 //#include <vmmlib/vector.hpp>
 

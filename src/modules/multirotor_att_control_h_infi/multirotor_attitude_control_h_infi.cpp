@@ -12,7 +12,8 @@
 
 //typedef vmml::matrix< 3, 3, float> Matrix;
 //typedef vmml::vector<3,float> Vector;
-//namespace math{
+//namespace math
+//{//TODO: DO I really need this?
 
 Multirotor_Attitude_Control_H_Infi::Multirotor_Attitude_Control_H_Infi() : 
 	_M(3,3),
@@ -229,4 +230,4 @@ void Multirotor_Attitude_Control_H_Infi::reset_integrator()
 	_integral(1)=0.0f;
 	_integral(2)=0.0f;
 }
-//}//namespace math
+//}// namespace math

@@ -37,8 +37,6 @@
 
 MODULE_COMMAND	= multirotor_att_control_h_infi
 
-INCLUDE_DIRS    += /home/jacob/Packages/vmmlib-1.0/include/
-
-SRCS		= multirotor_att_control_h_infi_main.c \
-		  multirotor_attitude_control_h_infi.cpp \
-		  h_infi_wrapper.cpp
+SRCS		= multirotor_attitude_control_h_infi.cpp \
+		  multirotor_att_control_h_infi_main.c \
+		  h_infi_wrapper.c
