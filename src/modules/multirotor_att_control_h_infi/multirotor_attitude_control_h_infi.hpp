@@ -10,14 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-//#include "Matrix.hpp"
-//#include <mathlib/math/Matrix.hpp>
-//#include <mathlib/math/Vector3.hpp>
-
-#include "Matrix.hpp"
-#include "Vector3.hpp"
-//#include <vmmlib/matrix.hpp>
-//#include <vmmlib/vector.hpp>
+#include <mathlib/mathlib.h>
 
 typedef math::Matrix  Matrix;
 typedef math::Vector3  Vector;
@@ -26,9 +19,8 @@ typedef math::Vector3  Vector;
 // typedef long long uint64_t;
 // #endif
 
-//namespace math{
 // TODO: scale the integral to timestep
-class Multirotor_Attitude_Control_H_Infi{ //__EXPORT
+class __EXPORT Multirotor_Attitude_Control_H_Infi{ //__EXPORT
 public:
 	Multirotor_Attitude_Control_H_Infi();
         
@@ -121,5 +113,4 @@ private:
 	void make_M(const State& St, Matrix& M);
 	void make_C(const State& St, const State& Rate, Matrix& C);
 };
-//}//namespace math
 #endif // MULTIROTOR_ATTITUDE_CONTROL_H_INFI_H
