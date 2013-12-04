@@ -65,6 +65,8 @@
 #include "h_infi_wrapper.hpp"
 #include "multirotor_attitude_control_h_infi.hpp"
 
+static Multirotor_Attitude_Control_H_Infi h_infi_controller;
+
 struct mc_att_control_h_infi_params {
 	float w_rate;
 	float w_position;
@@ -158,7 +160,7 @@ void h_infi_wrapper(
 	static int motor_skip_counter = 0;
 	
 	//static Multirotor_Attitude_Control_H_Infi h_infi_controller;
-	Multirotor_Attitude_Control_H_Infi h_infi_controller;
+	//Multirotor_Attitude_Control_H_Infi h_infi_controller;
 	static struct mc_att_control_h_infi_params p;
 	static struct mc_att_control_h_infi_param_handles h;
 
