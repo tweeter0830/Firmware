@@ -357,6 +357,7 @@ mc_thread_main(int argc, char *argv[])
 					&att_sp,
 					&att,
 					&rates_sp,
+					&actuators,
 //					&rates,
 					control_mode.flag_control_attitude_enabled,
 					control_yaw_position,

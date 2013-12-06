@@ -143,6 +143,7 @@ void h_infi_wrapper(
 	const struct vehicle_attitude_setpoint_s	*att_sp,
 	const struct vehicle_attitude_s			*att,
 	const struct vehicle_rates_setpoint_s		*rates_sp,
+	struct actuator_controls_s                      *actuators,
 //	const float 			                 rates[],
 	bool						 control_pos,
 	bool						 control_yaw_pos, 
@@ -202,8 +203,15 @@ void h_infi_wrapper(
 	/* calculate current control outputs */
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);		
 
-	//need to update the timestamp now that we've touched rates_sp
-	//rates_sp->timestamp = hrt_absolute_time();
+
+
+
+
+
+	// actuators->control[0] = roll_control;
+	// actuators->control[1] = pitch_control;
+	// actuators->control[2] = yaw_control;
+	// actuators->control[3] = rate_sp->thrust;
 
 	motor_skip_counter++;
 }
