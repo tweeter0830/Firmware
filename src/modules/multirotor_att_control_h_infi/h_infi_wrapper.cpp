@@ -64,6 +64,7 @@
 
 #include "h_infi_wrapper.hpp"
 #include "multirotor_attitude_control_h_infi.hpp"
+#include "body_torque_to_pwm.h"
 
 static Multirotor_Attitude_Control_H_Infi h_infi_controller;
 
@@ -78,6 +79,10 @@ struct mc_att_control_h_infi_params {
 	float Izz;
 	/* XX Implement this */
 	float integral_max;
+
+	float arm_length;
+	float forward_ang;
+	float torque_fract;
 };
 
 struct mc_att_control_h_infi_param_handles {
@@ -91,6 +96,10 @@ struct mc_att_control_h_infi_param_handles {
 	param_t Izz;
 
 	param_t integral_max;
+
+	param_t arm_length;
+	param_t forward_ang;
+	param_t torque_fract;
 };
 
 /**
@@ -120,6 +129,10 @@ static int parameters_init(struct mc_att_control_h_infi_param_handles *h)
 	/* Integral parameters */	                   
 	h->integral_max =	param_find("MC_H_INT_MAX");
 
+	/* torque to pwm parameters */
+	h->arm_length  =        param_find("MC_T_ARM_LENGTH");
+	h->forward_ang =        param_find("MC_T_FOR_ANGLE");
+	h->torque_fract=        param_find("MC_T_TORQUE_FRACT");
 	return OK;
 }
 
@@ -180,6 +193,7 @@ void h_infi_wrapper(
 		initialized = true;
 	}
 
+	bool updated = false;
 	/* load new parameters with lower rate */
 	if (motor_skip_counter % 500 == 0) {
 		/* update parameters from storage */
@@ -187,6 +201,7 @@ void h_infi_wrapper(
 
 		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
 		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
+		updated = true;
 	}
 
 	/* reset integrals if needed */
@@ -201,17 +216,29 @@ void h_infi_wrapper(
 	meas_rate.p = att->pitchspeed;
 	meas_rate.y = att->yawspeed;
 	/* calculate current control outputs */
-	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);		
+	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
+	control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
+	
+	struct body_torque_params body_t_p;
+	body_t_p.arm_length   = p.arm_length;
+	body_t_p.forward_ang  = p.forward_ang;
+	body_t_p.torque_fract = p.torque_fract;
 
+	struct body_torque body_t;
+	body_t.roll = torque_out.roll;
+	body_t.pitch = torque_out.pitch;
+	body_t.yaw = = torque_out.yaw;
 
-
-
-
-
-	// actuators->control[0] = roll_control;
-	// actuators->control[1] = pitch_control;
-	// actuators->control[2] = yaw_control;
-	// actuators->control[3] = rate_sp->thrust;
+	float pwm_fract[4] = {0};
+	bool success = body_torque_to_pwm(body_t,
+					 body_t,
+					 rate_sp->thrust,
+					 updated,
+					 pwm_fract);
+	actuators->control[0] = pwm_fract[0];
+	actuators->control[1] = pwm_fract[1];
+	actuators->control[2] = pwm_fract[2];
+	actuators->control[3] = pwm_fract[3];
 
 	motor_skip_counter++;
 }
