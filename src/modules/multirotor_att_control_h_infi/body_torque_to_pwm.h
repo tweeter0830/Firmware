@@ -1,10 +1,10 @@
-#ifndef H_INFI_WRAPPER_H_
-#define H_INFI_WRAPPER_H_
+#ifndef BODY_TORQUE_TO_PWM_H_
+#define BODY_TORQUE_TO_PWM_H_
 
 struct body_torque{
-	float roll;
-	float pitch;
-	float yaw;
+	float r;
+	float p;
+	float y;
 };
 
 struct body_torque_params{
@@ -13,9 +13,9 @@ struct body_torque_params{
 	float torque_fract;
 };
 
-int body_torque_to_pwm(const struct body_torque * torques,
-		       const struct body_torque_params * p,
-		       const float thrust,
-		       const bool updated,
-		       float *pwm_fract);
+extern void body_torque_to_pwm(struct body_torque * torques,
+			struct body_torque_params * p,
+			float thrust,
+		        bool updated,
+			float * pwm_fract);
 #endif /* H_INFI_WRAPPER_ */

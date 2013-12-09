@@ -37,8 +37,8 @@
 
 MODULE_COMMAND	= multirotor_att_control_h_infi
 
-SRCS		= multirotor_attitude_control_h_infi.cpp \
-		  multirotor_att_control_h_infi_main.cpp \
-		  h_infi_wrapper.cpp \
+SRCS		= h_infi_wrapper.cpp \
+		  body_torque_to_pwm.c \
 		  h_infi_params.c \
-		  body_torque_to_pwm.c
+		  multirotor_attitude_control_h_infi.cpp \
+		  multirotor_att_control_h_infi_main.cpp

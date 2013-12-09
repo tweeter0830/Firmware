@@ -217,7 +217,7 @@ void h_infi_wrapper(
 	meas_rate.y = att->yawspeed;
 	/* calculate current control outputs */
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
-	control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
+	h_infi_controller.control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
 	
 	struct body_torque_params body_t_p;
 	body_t_p.arm_length   = p.arm_length;
@@ -225,16 +225,23 @@ void h_infi_wrapper(
 	body_t_p.torque_fract = p.torque_fract;
 
 	struct body_torque body_t;
-	body_t.roll = torque_out.roll;
-	body_t.pitch = torque_out.pitch;
-	body_t.yaw = = torque_out.yaw;
+	body_t.r  = torque_out.r;
+	body_t.p  = torque_out.p;
+	body_t.y  = torque_out.y;
 
 	float pwm_fract[4] = {0};
-	bool success = body_torque_to_pwm(body_t,
-					 body_t,
-					 rate_sp->thrust,
-					 updated,
-					 pwm_fract);
+        body_torque_to_pwm( &body_t,
+					   &body_t_p,
+					   rates_sp->thrust,
+					   updated,
+					   pwm_fract);
+//'bool body_torque_to_pwm(const body_torque*, const body_torque_params*, float, bool, float*)'
+//undefined reference to `body_torque_to_pwm(body_torque const*, body_torque_params const*, float, bool, float*)
+        // bool success =  body_torque_to_pwm(&body_t,
+	// 				   &body_t_p,
+	// 				   rates_sp->thrust,
+	// 				   updated,
+	// 				   pwm_fract);
 	actuators->control[0] = pwm_fract[0];
 	actuators->control[1] = pwm_fract[1];
 	actuators->control[2] = pwm_fract[2];
