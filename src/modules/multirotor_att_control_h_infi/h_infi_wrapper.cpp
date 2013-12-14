@@ -64,7 +64,7 @@
 
 #include "h_infi_wrapper.hpp"
 #include "multirotor_attitude_control_h_infi.hpp"
-#include "body_torque_to_pwm.h"
+#include "body_torque_conversion.h"
 
 static Multirotor_Attitude_Control_H_Infi h_infi_controller;
 
@@ -164,7 +164,7 @@ void h_infi_wrapper(
 {
 	static uint64_t last_run = 0;
 	static uint64_t last_input = 0;
-	float deltaT = (hrt_absolute_time() - last_run) / 1000000.0f;
+	//float deltaT = (hrt_absolute_time() - last_run) / 1000000.0f;
 	last_run = hrt_absolute_time();
 
 	if (last_input != att_sp->timestamp) {
@@ -179,8 +179,6 @@ void h_infi_wrapper(
 	static struct mc_att_control_h_infi_param_handles h;
 
 	static bool initialized = false;
-
-	static float yaw_error;
 
 	/* initialize the controller when the function is called for the first time */
 	if (initialized == false) {
@@ -229,12 +227,12 @@ void h_infi_wrapper(
 	body_t.p  = torque_out.p;
 	body_t.y  = torque_out.y;
 
-	float pwm_fract[4] = {0};
+	float pwm_fract[4];
         body_torque_to_pwm( &body_t,
-					   &body_t_p,
-					   rates_sp->thrust,
-					   updated,
-					   pwm_fract);
+			    &body_t_p,
+			    rates_sp->thrust,
+			    updated,
+			    pwm_fract);
 //'bool body_torque_to_pwm(const body_torque*, const body_torque_params*, float, bool, float*)'
 //undefined reference to `body_torque_to_pwm(body_torque const*, body_torque_params const*, float, bool, float*)
         // bool success =  body_torque_to_pwm(&body_t,

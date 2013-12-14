@@ -65,6 +65,7 @@
 #include <uORB/topics/vehicle_global_velocity_setpoint.h>
 #include <systemlib/systemlib.h>
 #include <systemlib/pid/pid.h>
+#include <systemlib/err.h>
 #include <mavlink/mavlink_log.h>
 
 #include "multirotor_pos_control_params.h"
@@ -448,8 +449,8 @@ static int multirotor_pos_control_thread_main(int argc, char *argv[])
 					if (local_pos.ref_timestamp != local_ref_timestamp) {
 						reset_mission_sp = true;
 						local_ref_timestamp = local_pos.ref_timestamp;
-						double lat_home = local_pos.ref_lat * 1e-7;
-						double lon_home = local_pos.ref_lon * 1e-7;
+						double lat_home = local_pos.ref_lat * 1e-7f;
+						double lon_home = local_pos.ref_lon * 1e-7f;
 						map_projection_init(lat_home, lon_home);
 						mavlink_log_info(mavlink_fd, "[mpc] local pos ref: %.7f, %.7f", (double)lat_home, (double)lon_home);
 					}

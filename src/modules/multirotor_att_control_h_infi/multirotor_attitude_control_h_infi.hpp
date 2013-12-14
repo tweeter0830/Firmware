@@ -24,7 +24,7 @@ class __EXPORT Multirotor_Attitude_Control_H_Infi{ //__EXPORT
 public:
 	Multirotor_Attitude_Control_H_Infi();
         
-	typedef struct State
+	struct State
 	{
 		//Body angles in radians
 		float r;
@@ -61,20 +61,20 @@ public:
 	void set_weight_integral(float weight_in) {
 		_weight_error_integral = weight_in;
 	}
-	void set_integrator_max(float max) {
-		//_integrator_max = max;
-	}
-	void set_max_rate(float max_rate) {
-		//_max_rate = max_rate;
-	}
+	// void set_integrator_max(float max) {
+	// 	//_integrator_max = max;
+	// }
+	// void set_max_rate(float max_rate) {
+	// 	//_max_rate = max_rate;
+	// }
 
-	float get_rate_error() {
-		//return _rate_error;
-	}
+	// float get_rate_error() {
+	// 	//return _rate_error;
+	// }
 
-	float get_desired_rate() {
-		//return _rate_setpoint;
-	}
+	// float get_desired_rate() {
+	// 	//return _rate_setpoint;
+	// }
 	float get_integral(int num){
 		return _integral(num);
 	}
