@@ -5,15 +5,7 @@
 
 #include "multirotor_attitude_control_h_infi.hpp"
 
-//DEBUG
-#ifdef DEBUG
-#include <iostream>
-#endif
-
-//typedef vmml::matrix< 3, 3, float> Matrix;
-//typedef vmml::vector<3,float> Vector;
-//namespace math
-//{//TODO: DO I really need this?
+// #define H_INFI_CORE_DEBUG
 
 Multirotor_Attitude_Control_H_Infi::Multirotor_Attitude_Control_H_Infi() : 
 	_M(3,3),
@@ -99,11 +91,11 @@ bool Multirotor_Attitude_Control_H_Infi::control(const State& meas_state, const 
 	meas_rate_vect(0)=meas_state.r;
 	meas_rate_vect(1)=meas_state.p;
 	meas_rate_vect(2)=meas_state.y;
-	#ifdef DEBUG
+#ifdef H_INFI_CORE_DEBUG
 	std::cout << "error_state " << error_state << std::endl;
 	std::cout << "error_rate " << error_rate << std::endl;
 	std::cout << "setpoint_accel " << setpoint_accel << std::endl;
-	#endif
+#endif
 	_integral = _integral + error_state*dt;
 	if( !_yaw_track ){
 		_integral(2) = 0;
@@ -114,15 +106,14 @@ bool Multirotor_Attitude_Control_H_Infi::control(const State& meas_state, const 
 		else if( _integral(i) < -_int_sat )
 			_integral(i) = -_int_sat;
 	}
- 	// TODO: check integral limits and saturation
 	Vector control_accel = k_d*error_rate + k_p*error_state - k_i*_integral;
 	Vector control_torque = _M*setpoint_accel + _Cor*meas_rate_vect - _M*control_accel;
-	#ifdef DEBUG
+#ifdef H_INFI_CORE_DEBUG
 	std::cout << "Time Diff: " << dt << std::endl;
 	std::cout << "_integral " << _integral << std::endl;
 	std::cout << "control_accel " << control_accel << std::endl;
 	std::cout << "control_torque "<< control_torque<< std::endl;
-	#endif
+#endif
 	torque_out.r = control_torque(0);
 	torque_out.p = control_torque(1);
 	torque_out.y = control_torque(2);
@@ -138,7 +129,6 @@ void Multirotor_Attitude_Control_H_Infi::calc_gains(const Matrix& M,const Matrix
 	
 	float I_data[] = { 1,0,0, 0,1,0, 0,0,1 };
 	Matrix I(3,3,I_data);
-	//I.set(I_data,I_data+9);
 	Matrix M_inv(3,3);
 	M_inv = M.inverse();
 	Matrix Dynamics_weights = M_inv*( C+I*( 1.0f/(w_u*w_u) ) );
@@ -147,7 +137,7 @@ void Multirotor_Attitude_Control_H_Infi::calc_gains(const Matrix& M,const Matrix
 	k_d = (I*long_expr)+Dynamics_weights;
 	k_p = I*(w_3/w_1)+Dynamics_weights*long_expr;
 	k_i = Dynamics_weights*(w_3/w_1);
-	#ifdef DEBUG
+#ifdef H_INFI_CORE_DEBUG
 	std::cout<< "Calculated Gains:---------"<< std::endl;
 	std::cout<< "I\n" << I << std::endl;
 	std::cout<< "M_Inverse\n" << M_inv << std::endl;
@@ -156,7 +146,7 @@ void Multirotor_Attitude_Control_H_Infi::calc_gains(const Matrix& M,const Matrix
 	std::cout<< "k_d\n"<< k_d << std::endl;
 	std::cout<< "k_p\n"<< k_p << std::endl;
 	std::cout<< "k_i\n"<< k_i << std::endl;
-	#endif
+#endif
 }
 
 void Multirotor_Attitude_Control_H_Infi::make_M(const State& St, Matrix& M) {
@@ -180,9 +170,9 @@ void Multirotor_Attitude_Control_H_Infi::make_M(const State& St, Matrix& M) {
 		     _Izz*cos_R*cos_R*cos_P*cos_P;
 	
 	M.set(M_vals);
-	#ifdef DEBUG
+#ifdef H_INFI_CORE_DEBUG
 	std::cout<< "M " << M << std::endl;
-	#endif
+#endif
 }
 
 void Multirotor_Attitude_Control_H_Infi::make_C(const State& St, const State& Rate, Matrix& C) {
@@ -219,9 +209,9 @@ void Multirotor_Attitude_Control_H_Infi::make_C(const State& St, const State& Ra
 		     _Izz*Rate.p*c_ph*c_ph*c_th*s_th + 
 		     _Ixx*Rate.p*c_th*s_th;
 	C.set( C_vals );
-	#ifdef DEBUG
+#ifdef H_INFI_CORE_DEBUG
 	std::cout<< "C " << C << std::endl;
-	#endif
+#endif
 }
 
 void Multirotor_Attitude_Control_H_Infi::reset_integrator()
@@ -230,4 +220,4 @@ void Multirotor_Attitude_Control_H_Infi::reset_integrator()
 	_integral(1)=0.0f;
 	_integral(2)=0.0f;
 }
-//}// namespace math
+

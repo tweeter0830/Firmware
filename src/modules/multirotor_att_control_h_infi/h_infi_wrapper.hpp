@@ -69,6 +69,7 @@ void h_infi_wrapper(
 //	const float			                *rates,
 	bool						 control_pos,
 	bool						 control_yaw, 
-	bool						 reset_integral);
+	bool						 reset_integral,
+	bool                                             update);
 
 #endif /* MULTIROTOR_ATTITUDE_CONTROL_H_ */

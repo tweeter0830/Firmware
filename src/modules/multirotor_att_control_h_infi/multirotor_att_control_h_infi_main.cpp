@@ -77,11 +77,10 @@
 
 #include "h_infi_wrapper.hpp"
 
-// extern "C"{
-// 	#include "h_infi_params.h"
-// }
-
 extern "C" __EXPORT int multirotor_att_control_h_infi_main(int argc, char *argv[]);
+
+#define H_INFI_DEBUGGING
+#define H_INFI_DEBUG_SKIP 500
 
 static bool thread_should_exit;
 static int mc_task;
@@ -89,9 +88,11 @@ static bool motor_test_mode = false;
 static const float min_takeoff_throttle = 0.3f;
 static const float yaw_deadzone = 0.01f;
 
-static int
-mc_thread_main(int argc, char *argv[])
+static int mc_thread_main(int argc, char *argv[])
 {
+#ifdef H_INFI_DEBUGGING
+	warnx("Starting h_infi main loop");
+#endif
 	/* declare and safely initialize all structs */
 	struct vehicle_attitude_s att;
 	memset(&att, 0, sizeof(att));
@@ -133,10 +134,10 @@ mc_thread_main(int argc, char *argv[])
 	orb_advert_t rates_sp_pub = orb_advertise(ORB_ID(vehicle_rates_setpoint), &rates_sp);
 
 	/* register the perf counter */
-	perf_counter_t mc_loop_perf = perf_alloc(PC_ELAPSED, "multirotor_att_control_runtime");
-	perf_counter_t mc_interval_perf = perf_alloc(PC_INTERVAL, "multirotor_att_control_interval");
-	perf_counter_t mc_err_perf = perf_alloc(PC_COUNT, "multirotor_att_control_err");
-
+	perf_counter_t mc_loop_perf = perf_alloc(PC_ELAPSED, "multirotor_h_infi_runtime");
+	perf_counter_t mc_interval_perf = perf_alloc(PC_INTERVAL, "multirotor_h_infi_interval");
+	perf_counter_t mc_err_perf = perf_alloc(PC_COUNT, "multirotor_h_infi_err");
+	perf_counter_t mc_wrapper_interval = perf_alloc(PC_INTERVAL,"multirotor_h_infi_wrapp_interval");
 	warnx("starting");
 
 	/* store last control mode to detect mode switches */
@@ -146,15 +147,26 @@ mc_thread_main(int argc, char *argv[])
 	struct pollfd fds[1];
 	fds[0].fd     = vehicle_attitude_sub;
 	fds[0].events = POLLIN;
-	// {
-	// 	{ .fd = vehicle_attitude_sub, .events = POLLIN },
-	// };
 
+	bool debug_loop = false;
+#ifdef H_INFI_DEBUGGING
+        unsigned long loop_count = 0;
+#endif
 	while (!thread_should_exit) {
-
+#ifdef H_INFI_DEBUGGING
+		loop_count++;
+		if( loop_count % H_INFI_DEBUG_SKIP == 0)
+			debug_loop = true;
+		else
+			debug_loop = false;
+#endif
 		/* wait for a sensor update, check for exit condition every 500 ms */
 		int ret = poll(fds, 1, 500);
-
+		
+#ifdef H_INFI_DEBUGGING
+		if ( debug_loop )
+			warnx("looping");
+#endif
 		if (ret < 0) {
 			/* poll error, count it in perf */
 			perf_count(mc_err_perf);
@@ -349,19 +361,27 @@ mc_thread_main(int argc, char *argv[])
 				/* get current rate setpoint */
 				bool rates_sp_updated = false;
 				orb_check(vehicle_rates_setpoint_sub, &rates_sp_updated);
-
 				if (rates_sp_updated) {
 					orb_copy(ORB_ID(vehicle_rates_setpoint), vehicle_rates_setpoint_sub, &rates_sp);
 				}
+				perf_begin(mc_wrapper_interval);
+				/* run the actual control logic */
 				h_infi_wrapper(
 					&att_sp,
 					&att,
 					&rates_sp,
 					&actuators,
-//					&rates,
 					control_mode.flag_control_attitude_enabled,
 					control_yaw_position,
-					reset_integral);
+					reset_integral,
+					debug_loop);
+				perf_end(mc_wrapper_interval);
+#ifdef H_INFI_DEBUGGING
+				if( debug_loop ){
+					perf_print_counter(mc_interval_perf);
+					perf_print_counter(mc_wrapper_interval);
+				}
+#endif 
 			} else {
 				/* rates controller disabled, set actuators to zero for safety */
 				actuators.control[0] = 0.0f;
@@ -369,19 +389,26 @@ mc_thread_main(int argc, char *argv[])
 				actuators.control[2] = 0.0f;
 				actuators.control[3] = 0.0f;
 			}
-
 			/* fill in manual control values */
 			actuators.control[4] = manual.flaps;
 			actuators.control[5] = manual.aux1;
 			actuators.control[6] = manual.aux2;
 			actuators.control[7] = manual.aux3;
-
+#ifdef H_INFI_DEBUGGING
+			if (debug_loop){
+				for (int n=0 ; n<8 ; n++)
+				{
+					warnx("actuator.control %n %4.6f",n,actuators.control[n]);
+				}
+			}
+#endif
 			actuators.timestamp = hrt_absolute_time();
 			orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_pub, &actuators);
 
 			perf_end(mc_loop_perf);
 		}
 	}
+
 
 	warnx("stopping, disarming motors");
 
@@ -396,9 +423,12 @@ mc_thread_main(int argc, char *argv[])
 	close(manual_control_setpoint_sub);
 	close(actuator_pub);
 	close(att_sp_pub);
+	
 
 	perf_print_counter(mc_loop_perf);
+	perf_print_counter(mc_wrapper_interval);
 	perf_free(mc_loop_perf);
+	perf_free(mc_wrapper_interval);
 
 	fflush(stdout);
 	exit(0);

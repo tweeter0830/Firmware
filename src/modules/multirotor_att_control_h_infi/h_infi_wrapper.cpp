@@ -60,11 +60,14 @@
 #include <math.h>
 #include <systemlib/pid/pid.h>
 #include <systemlib/param/param.h>
+#include <systemlib/err.h>
 #include <drivers/drv_hrt.h>
 
 #include "h_infi_wrapper.hpp"
 #include "multirotor_attitude_control_h_infi.hpp"
 #include "body_torque_conversion.h"
+
+#define H_INFI_WRAPPER_DEBUG 
 
 static Multirotor_Attitude_Control_H_Infi h_infi_controller;
 
@@ -157,14 +160,13 @@ void h_infi_wrapper(
 	const struct vehicle_attitude_s			*att,
 	const struct vehicle_rates_setpoint_s		*rates_sp,
 	struct actuator_controls_s                      *actuators,
-//	const float 			                 rates[],
 	bool						 control_pos,
 	bool						 control_yaw_pos, 
-	bool						 reset_integral)
+	bool						 reset_integral,
+	bool                                             print_debug)
 {
 	static uint64_t last_run = 0;
 	static uint64_t last_input = 0;
-	//float deltaT = (hrt_absolute_time() - last_run) / 1000000.0f;
 	last_run = hrt_absolute_time();
 
 	if (last_input != att_sp->timestamp) {
@@ -173,13 +175,10 @@ void h_infi_wrapper(
 
 	static int motor_skip_counter = 0;
 	
-	//static Multirotor_Attitude_Control_H_Infi h_infi_controller;
-	//Multirotor_Attitude_Control_H_Infi h_infi_controller;
 	static struct mc_att_control_h_infi_params p;
 	static struct mc_att_control_h_infi_param_handles h;
 
 	static bool initialized = false;
-
 	/* initialize the controller when the function is called for the first time */
 	if (initialized == false) {
 		parameters_init(&h);
@@ -190,13 +189,12 @@ void h_infi_wrapper(
 
 		initialized = true;
 	}
-
 	bool updated = false;
 	/* load new parameters with lower rate */
 	if (motor_skip_counter % 500 == 0) {
 		/* update parameters from storage */
 		parameters_update(&h, &p);
-
+		
 		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
 		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
 		updated = true;
@@ -214,9 +212,31 @@ void h_infi_wrapper(
 	meas_rate.p = att->pitchspeed;
 	meas_rate.y = att->yawspeed;
 	/* calculate current control outputs */
+	hrt_abstime start_time = 0;
+#ifdef H_INFI_WRAPPER_DEBUG
+	if( print_debug ){
+		start_time = hrt_absolute_time();
+	}
+#endif
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
 	h_infi_controller.control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
-	
+#ifdef H_INFI_WRAPPER_DEBUG 
+	if( print_debug ){
+		warnx("Holy Jesus, control took %llu microseconds",hrt_absolute_time()-start_time);
+		warnx("meas_state %4.4f,\t%4.4f,\t%4.4f,\t", 
+		      meas_state.r,
+		      meas_state.p,
+		      meas_state.y);
+		warnx("meas_rate %4.4f,\t%4.4f,\t%4.4f,\t", 
+		      meas_rate.r,
+		      meas_rate.p,
+		      meas_rate.y);
+		warnx("torque_out %4.4f,\t%4.4f,\t%4.4f,\t", 
+		      torque_out.r,
+		      torque_out.p,
+		      torque_out.y);
+	}
+#endif
 	struct body_torque_params body_t_p;
 	body_t_p.arm_length   = p.arm_length;
 	body_t_p.forward_ang  = p.forward_ang;
@@ -226,20 +246,23 @@ void h_infi_wrapper(
 	body_t.r  = torque_out.r;
 	body_t.p  = torque_out.p;
 	body_t.y  = torque_out.y;
-
+#ifdef H_INFI_WRAPPER_DEBUG 
+	if( print_debug ){
+		start_time = hrt_absolute_time();
+	}
+#endif
 	float pwm_fract[4];
         body_torque_to_pwm( &body_t,
 			    &body_t_p,
 			    rates_sp->thrust,
 			    updated,
-			    pwm_fract);
-//'bool body_torque_to_pwm(const body_torque*, const body_torque_params*, float, bool, float*)'
-//undefined reference to `body_torque_to_pwm(body_torque const*, body_torque_params const*, float, bool, float*)
-        // bool success =  body_torque_to_pwm(&body_t,
-	// 				   &body_t_p,
-	// 				   rates_sp->thrust,
-	// 				   updated,
-	// 				   pwm_fract);
+			    pwm_fract,
+			    print_debug);
+#ifdef H_INFI_WRAPPER_DEBUG 
+	if( print_debug ){
+		warnx("Holy Jesus, torque to pwm took %llu microseconds",hrt_absolute_time()-start_time);
+	}	
+#endif
 	actuators->control[0] = pwm_fract[0];
 	actuators->control[1] = pwm_fract[1];
 	actuators->control[2] = pwm_fract[2];
