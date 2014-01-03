@@ -1,9 +1,11 @@
 #ifndef BODY_TORQUE_TO_PWM_H_
 #define BODY_TORQUE_TO_PWM_H_
 
+#include <stdbool.h> 
+
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif /* __cplusplus */
 
 struct body_torque{
 	float r;
@@ -18,13 +20,16 @@ struct body_torque_params{
 };
 
 //extern void body_torque_to_pwm(void);
-__EXPORT void body_torque_to_pwm(struct body_torque * torques,
-				 struct body_torque_params * p,
-				 float thrust,
-				 bool updated,
-				 float * pwm_fract,
-				 bool debug_loop);
+#ifdef __CC_ARM
+__EXPORT
+#endif
+void body_torque_to_pwm(struct body_torque * torques,
+			struct body_torque_params * p,
+			float thrust,
+			bool updated,
+			float * pwm_fract,
+			bool debug_loop);
 #ifdef __cplusplus
 }
-#endif
+#endif /* __cplusplus */
 #endif /* H_INFI_WRAPPER_ */
