@@ -79,7 +79,7 @@
 
 extern "C" __EXPORT int multirotor_att_control_h_infi_main(int argc, char *argv[]);
 
-#define H_INFI_DEBUGGING
+//#define H_INFI_DEBUGGING
 #define H_INFI_DEBUG_SKIP 500
 
 static bool thread_should_exit;
@@ -398,7 +398,7 @@ static int mc_thread_main(int argc, char *argv[])
 			if (debug_loop){
 				for (int n=0 ; n<8 ; n++)
 				{
-					warnx("actuator.control %n %4.6f",n,actuators.control[n]);
+					warnx("actuator.control(%d)%4.6f",n,actuators.control[n]);
 				}
 			}
 #endif

@@ -9,16 +9,16 @@
 
 #include "body_torque_conversion.h"
 
-#define BODY_TORQUE_DEBUG
+//#define BODY_TORQUE_DEBUG
 
 #ifdef BODY_TORQUE_DEBUG
 int (*print_ptr) (const char *str, ...);
+static void print_4by4_matrix(const float m[16]);
 #endif /* BODY_TORQUE_DEBUG */
 
 static void make_conversion_mat( const struct body_torque_params * p, float out_mat[16] );
 static float simple_interp(const float * x, const float * y, const int length, const float x0);
 static bool invert_4by4_matrix(const float m[16], float invOut[16]);
-static void print_4by4_matrix(const float m[16]);
 
 #ifdef __CC_ARM
 __EXPORT 
@@ -29,10 +29,12 @@ void body_torque_to_pwm(struct body_torque * torques,
 			bool updated,
 			float * pwm_fract,
 			bool debug_loop){
+# ifdef BODY_TORQUE_DEBUG
 # ifdef __CC_ARM
 	print_ptr = &warnx; 
 # else
 	print_ptr = &printf; 
+# endif
 # endif
 	static float pwm_val[]    = { 950,1000,1050,1100,1150,1200,1250,1350,1450,1550,1650,1750,1850,1900};
 	static float thrust_val[] = {0.03f,0.21f,0.45f,0.73f,1.06f,1.39f,1.82f,2.85f,4.05f,5.40f,6.65f,7.69f,8.05f,8.35f};
@@ -43,12 +45,14 @@ void body_torque_to_pwm(struct body_torque * torques,
 	static float body_to_motor[16] = {0};
 	static float motor_to_body[16] = {0};
 	bool zero_det = false;
-	if( updated || ~initialized ){
+	if( updated || !initialized ){
 		make_conversion_mat( p, motor_to_body);
 		zero_det = invert_4by4_matrix(motor_to_body, body_to_motor);
+# ifdef BODY_TORQUE_DEBUG
 		if( !zero_det ){
 			(*print_ptr) ("Zero determinant\n");
 		}
+# endif
 		initialized = true;
 	}
 	if( thrust < 0.0f )
@@ -90,7 +94,10 @@ void body_torque_to_pwm(struct body_torque * torques,
 	}
 #ifdef BODY_TORQUE_DEBUG
 	if (debug_loop){
-		(*print_ptr) ("Initialized: %b\n",initialized);
+		if (initialized)
+			(*print_ptr) ("Initialized\n");
+		else 
+			(*print_ptr) ("Not Initialized\n");
 		(*print_ptr) ("motor_to_body:\n");
 		print_4by4_matrix(motor_to_body);
 		(*print_ptr) ("body_to_motor:\n");
@@ -285,9 +292,11 @@ static bool invert_4by4_matrix(const float m[16], float invOut[16])
     return true;
 }
 
+#ifdef BODY_TORQUE_DEBUG
 static void print_4by4_matrix(const float m[16]){
 	for (int i = 0 ; i < 4 ; i++){
 		(*print_ptr) ("Row:%d, [%4.3f\t%4.3f\t%4.3f\t%4.3f]\n",
 		      i, m[i*4], m[i*4+1], m[i*4+2], m[i*4+3]);
 	}
 }
+#endif
