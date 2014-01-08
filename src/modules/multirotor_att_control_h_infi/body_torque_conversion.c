@@ -51,6 +51,8 @@ void body_torque_to_pwm(struct body_torque * torques,
 # ifdef BODY_TORQUE_DEBUG
 		if( !zero_det ){
 			(*print_ptr) ("Zero determinant\n");
+			(*print_ptr) ("%f\t%f\t%f\n",
+				      p->arm_length, p->forward_ang, p->torque_fract);
 		}
 # endif
 		initialized = true;
@@ -90,7 +92,7 @@ void body_torque_to_pwm(struct body_torque * torques,
 	float rot_high_time[4] = {0};
 	for( int i = 0; i<4; i++ ){
 		rot_high_time[i] = simple_interp(thrust_val, pwm_val, table_length, rot_thrust[i]);
-		pwm_fract[i] = ( rot_high_time[i]-pwm_val[0] )/( pwm_val[table_length-1]-pwm_val[0] );
+		pwm_fract[i] = ( rot_high_time[i]-pwm_val[0] )/( pwm_val[table_length-1]-pwm_val[0] ) * 2.0f - 1.0f;
 	}
 #ifdef BODY_TORQUE_DEBUG
 	if (debug_loop){
@@ -98,10 +100,10 @@ void body_torque_to_pwm(struct body_torque * torques,
 			(*print_ptr) ("Initialized\n");
 		else 
 			(*print_ptr) ("Not Initialized\n");
-		(*print_ptr) ("motor_to_body:\n");
-		print_4by4_matrix(motor_to_body);
-		(*print_ptr) ("body_to_motor:\n");
-		print_4by4_matrix(body_to_motor);
+		/* (*print_ptr) ("motor_to_body:\n"); */
+		/* print_4by4_matrix(motor_to_body); */
+		/* (*print_ptr) ("body_to_motor:\n"); */
+		/* print_4by4_matrix(body_to_motor); */
 		(*print_ptr) ("rot_thrust:\n");
 		(*print_ptr) ("[%4.2f\t%4.2f\t%4.2f\t%4.2f]\n",
 		      rot_thrust[0], rot_thrust[1], rot_thrust[2], rot_thrust[3]);

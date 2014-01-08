@@ -152,6 +152,10 @@ static int parameters_update(const struct mc_att_control_h_infi_param_handles *h
 
 	param_get(h->integral_max, &(p->integral_max));
 
+	param_get(h->arm_length  , &(p->arm_length));
+	param_get(h->forward_ang , &(p->forward_ang));
+	param_get(h->torque_fract, &(p->torque_fract));
+	
 	return OK;
 }
 
@@ -204,13 +208,28 @@ void h_infi_wrapper(
 	if (reset_integral) {
 		h_infi_controller.reset_integrator();
 	}
-	Multirotor_Attitude_Control_H_Infi::State meas_state, meas_rate, torque_out;
+	Multirotor_Attitude_Control_H_Infi::State 
+		meas_state, 
+		meas_rate,
+		set_state,
+		set_rate,
+		set_accel,
+		torque_out;
 	meas_state.r = att->roll;
 	meas_state.p = att->pitch;
 	meas_state.y = att->yaw;
 	meas_rate.r = att->rollspeed;
 	meas_rate.p = att->pitchspeed;
 	meas_rate.y = att->yawspeed;
+	set_state.r = att_sp->roll_body;
+	set_state.p = att_sp->pitch_body;
+	set_state.y = att_sp->yaw_body;
+	set_rate.r = rates_sp->roll;
+	set_rate.p = rates_sp->pitch;
+	set_rate.y = rates_sp->yaw;
+	set_accel.r = 0.0f;
+	set_accel.p = 0.0f;
+	set_accel.y = 0.0f;
 	/* calculate current control outputs */
 	hrt_abstime start_time = 0;
 #ifdef H_INFI_WRAPPER_DEBUG
@@ -218,20 +237,29 @@ void h_infi_wrapper(
 		start_time = hrt_absolute_time();
 	}
 #endif
+	h_infi_controller.set_setpoints(set_state,set_rate,set_accel);
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
 	h_infi_controller.control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
 #ifdef H_INFI_WRAPPER_DEBUG 
 	if( print_debug ){
-		warnx("Holy Jesus, control took %llu microseconds",hrt_absolute_time()-start_time);
-		warnx("meas_state %4.4f,\t%4.4f,\t%4.4f,\t", 
+		warnx("Control: %llu usec",hrt_absolute_time()-start_time);
+		warnx("meas_state %4.2f,\t%4.2f,\t%4.2f,\n", 
 		      meas_state.r,
 		      meas_state.p,
 		      meas_state.y);
-		warnx("meas_rate %4.4f,\t%4.4f,\t%4.4f,\t", 
+		warnx("meas_rate %4.2f,\t%4.2f,\t%4.2f,\n", 
 		      meas_rate.r,
 		      meas_rate.p,
 		      meas_rate.y);
-		warnx("torque_out %4.4f,\t%4.4f,\t%4.4f,\t", 
+		warnx("att_set %4.2f,\t%4.2f,\t%4.2f,\n", 
+		      set_state.r,
+		      set_state.p,
+		      set_state.y);
+		warnx("rate set %4.2f,\t%4.2f,\t%4.2f,\n", 
+		      set_rate.r,
+		      set_rate.p,
+		      set_rate.y);
+		warnx("torque_out %4.2f,\t%4.2f,\t%4.2f,\n", 
 		      torque_out.r,
 		      torque_out.p,
 		      torque_out.y);
@@ -254,13 +282,18 @@ void h_infi_wrapper(
 	float pwm_fract[4];
         body_torque_to_pwm( &body_t,
 			    &body_t_p,
-			    rates_sp->thrust,
+			    att_sp->thrust,
 			    updated,
 			    pwm_fract,
 			    print_debug);
 #ifdef H_INFI_WRAPPER_DEBUG 
 	if( print_debug ){
-		warnx("Holy Jesus, torque to pwm took %llu microseconds",hrt_absolute_time()-start_time);
+		warnx("pwm_fract: %2.3f,\t%2.3f,\t%2.3f,\t%2.3f\n",
+		      pwm_fract[0],
+		      pwm_fract[1],
+		      pwm_fract[2],
+		      pwm_fract[3]);
+		warnx("torque to pwm: %llu usec\n",hrt_absolute_time()-start_time);
 	}	
 #endif
 	actuators->control[0] = pwm_fract[0];

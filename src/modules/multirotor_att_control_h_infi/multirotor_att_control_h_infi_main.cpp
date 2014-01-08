@@ -79,7 +79,7 @@
 
 extern "C" __EXPORT int multirotor_att_control_h_infi_main(int argc, char *argv[]);
 
-//#define H_INFI_DEBUGGING
+#define H_INFI_DEBUGGING
 #define H_INFI_DEBUG_SKIP 500
 
 static bool thread_should_exit;
@@ -138,7 +138,6 @@ static int mc_thread_main(int argc, char *argv[])
 	perf_counter_t mc_interval_perf = perf_alloc(PC_INTERVAL, "multirotor_h_infi_interval");
 	perf_counter_t mc_err_perf = perf_alloc(PC_COUNT, "multirotor_h_infi_err");
 	perf_counter_t mc_wrapper_interval = perf_alloc(PC_INTERVAL,"multirotor_h_infi_wrapp_interval");
-	warnx("starting");
 
 	/* store last control mode to detect mode switches */
 	bool control_yaw_position = true;
@@ -242,6 +241,7 @@ static int mc_thread_main(int argc, char *argv[])
 			/* define which input is the dominating control input */
 			if (control_mode.flag_control_offboard_enabled) {
 				/* offboard inputs */
+				/* TODO: Figure out how to handle the direct rate control */
 				if (offboard_sp.mode == OFFBOARD_CONTROL_MODE_DIRECT_RATES) {
 					rates_sp.roll = offboard_sp.p1;
 					rates_sp.pitch = offboard_sp.p2;
@@ -308,7 +308,7 @@ static int mc_thread_main(int argc, char *argv[])
 					}
 
 					if (motor_test_mode) {
-						printf("testmode");
+						warnx("testmode");
 						att_sp.roll_body = 0.0f;
 						att_sp.pitch_body = 0.0f;
 						att_sp.yaw_body = 0.0f;
@@ -357,7 +357,7 @@ static int mc_thread_main(int argc, char *argv[])
 			perf_count(mc_interval_perf);
 			
 			/* run rates controller if needed */
-			if (control_mode.flag_control_rates_enabled) {
+			if (control_mode.flag_control_rates_enabled ) {
 				/* get current rate setpoint */
 				bool rates_sp_updated = false;
 				orb_check(vehicle_rates_setpoint_sub, &rates_sp_updated);
@@ -376,6 +376,7 @@ static int mc_thread_main(int argc, char *argv[])
 					reset_integral,
 					debug_loop);
 				perf_end(mc_wrapper_interval);
+
 #ifdef H_INFI_DEBUGGING
 				if( debug_loop ){
 					perf_print_counter(mc_interval_perf);
@@ -384,10 +385,10 @@ static int mc_thread_main(int argc, char *argv[])
 #endif 
 			} else {
 				/* rates controller disabled, set actuators to zero for safety */
-				actuators.control[0] = 0.0f;
-				actuators.control[1] = 0.0f;
-				actuators.control[2] = 0.0f;
-				actuators.control[3] = 0.0f;
+				actuators.control[0] = -1.0f;
+				actuators.control[1] = -1.0f;
+				actuators.control[2] = -1.0f;
+				actuators.control[3] = -1.0f;
 			}
 			/* fill in manual control values */
 			actuators.control[4] = manual.flaps;
@@ -398,7 +399,7 @@ static int mc_thread_main(int argc, char *argv[])
 			if (debug_loop){
 				for (int n=0 ; n<8 ; n++)
 				{
-					warnx("actuator.control(%d)%4.6f",n,actuators.control[n]);
+					warnx("act(%d)%4.3f\n",n,actuators.control[n]);
 				}
 			}
 #endif
