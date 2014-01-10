@@ -93,6 +93,7 @@ static int mc_thread_main(int argc, char *argv[])
 #ifdef H_INFI_DEBUGGING
 	warnx("Starting h_infi main loop");
 #endif
+
 	/* declare and safely initialize all structs */
 	struct vehicle_attitude_s att;
 	memset(&att, 0, sizeof(att));
@@ -164,7 +165,7 @@ static int mc_thread_main(int argc, char *argv[])
 		
 #ifdef H_INFI_DEBUGGING
 		if ( debug_loop )
-			warnx("looping");
+			fprintf(stderr,"looping");
 #endif
 		if (ret < 0) {
 			/* poll error, count it in perf */
@@ -308,7 +309,7 @@ static int mc_thread_main(int argc, char *argv[])
 					}
 
 					if (motor_test_mode) {
-						warnx("testmode");
+						fprintf(stderr,"testmode");
 						att_sp.roll_body = 0.0f;
 						att_sp.pitch_body = 0.0f;
 						att_sp.yaw_body = 0.0f;
@@ -399,7 +400,7 @@ static int mc_thread_main(int argc, char *argv[])
 			if (debug_loop){
 				for (int n=0 ; n<8 ; n++)
 				{
-					warnx("act(%d)%4.3f\n",n,actuators.control[n]);
+					fprintf(stderr,"act(%d)%4.3f\n",n,actuators.control[n]);
 				}
 			}
 #endif
@@ -411,7 +412,7 @@ static int mc_thread_main(int argc, char *argv[])
 	}
 
 
-	warnx("stopping, disarming motors");
+	fprintf(stderr,"stopping, disarming motors");
 
 	/* kill all outputs */
 	for (unsigned i = 0; i < NUM_ACTUATOR_CONTROLS; i++)

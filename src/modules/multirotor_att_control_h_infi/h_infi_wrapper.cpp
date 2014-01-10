@@ -211,10 +211,10 @@ void h_infi_wrapper(
 	Multirotor_Attitude_Control_H_Infi::State 
 		meas_state, 
 		meas_rate,
+		torque_out,
 		set_state,
 		set_rate,
-		set_accel,
-		torque_out;
+		set_accel;
 	meas_state.r = att->roll;
 	meas_state.p = att->pitch;
 	meas_state.y = att->yaw;
