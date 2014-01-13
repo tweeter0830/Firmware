@@ -67,7 +67,7 @@
 #include "multirotor_attitude_control_h_infi.hpp"
 #include "body_torque_conversion.h"
 
-#define H_INFI_WRAPPER_DEBUG 
+//#define H_INFI_WRAPPER_DEBUG 
 
 static Multirotor_Attitude_Control_H_Infi h_infi_controller;
 

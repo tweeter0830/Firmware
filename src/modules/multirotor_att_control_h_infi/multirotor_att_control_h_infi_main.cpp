@@ -80,7 +80,7 @@
 extern "C" __EXPORT int multirotor_att_control_h_infi_main(int argc, char *argv[]);
 
 #define H_INFI_DEBUGGING
-#define H_INFI_DEBUG_SKIP 500
+#define H_INFI_DEBUG_SKIP 2000
 
 static bool thread_should_exit;
 static int mc_task;
