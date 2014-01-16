@@ -68,19 +68,22 @@
 #include "body_torque_conversion.h"
 
 #include <uORB/uORB.h>
-#include <uORB/topics/vehicle_torque_command.h>
+//#include <uORB/topics/vehicle_torque_command.h>
 
 #define H_INFI_WRAPPER_DEBUG 
 
 #ifdef H_INFI_WRAPPER_DEBUG
 #include <uORB/topics/debug_key_value.h>
 static struct debug_key_value_s dbg_tr;
+static struct debug_key_value_s dbg_t_r;
+static struct debug_key_value_s dbg_t_p;
+static struct debug_key_value_s dbg_t_y;
 static orb_advert_t pub_dbg_tr;
 #endif
 
-ORB_DEFINE(vehicle_torque_command, struct vehicle_torque_command_s);
-static struct vehicle_torque_command_s torque_comm;
-static orb_advert_t pub_torque_comm;
+//ORB_DEFINE(vehicle_torque_command, struct vehicle_torque_command_s);
+//static struct vehicle_torque_command_s torque_comm;
+//static orb_advert_t pub_torque_comm;
 
 static Multirotor_Attitude_Control_H_Infi h_infi_controller;
 
@@ -205,16 +208,22 @@ void h_infi_wrapper(
 
 #ifdef H_INFI_WRAPPER_DEBUG
 		strcpy(dbg_tr.key,  "Tr_com");
+		strcpy(dbg_t_r.key, "T_r");
+		strcpy(dbg_t_p.key,  "T_p");
+		strcpy(dbg_t_y.key,  "T_y");
 
 		dbg_tr.value = 0.0f;
+		dbg_t_r.value = 0.0f;
+		dbg_t_p.value = 0.0f;
+		dbg_t_y.value = 0.0f;
 
 		pub_dbg_tr = orb_advertise(ORB_ID(debug_key_value), &dbg_tr);
 #endif
-		torque_comm.roll = 0.0f;
-		torque_comm.pitch= 0.0f;
-		torque_comm.yaw  = 0.0f;
-		strcpy(torque_comm.key, "Tor_comm");
-		pub_torque_comm = orb_advertise(ORB_ID(vehicle_torque_command), &torque_comm);
+		// torque_comm.roll = 0.0f;
+		// torque_comm.pitch= 0.0f;
+		// torque_comm.yaw  = 0.0f;
+		// strcpy(torque_comm.key, "Tor_comm");
+		// pub_torque_comm = orb_advertise(ORB_ID(vehicle_torque_command), &torque_comm);
 
 		initialized = true;
 	}
@@ -262,36 +271,20 @@ void h_infi_wrapper(
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
 	h_infi_controller.control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
 
-	torque_comm.roll = torque_out.r;
-	torque_comm.pitch= torque_out.p;
-	torque_comm.yaw  = torque_out.y;
+	// torque_comm.roll = torque_out.r;
+	// torque_comm.pitch= torque_out.p;
+	// torque_comm.yaw  = torque_out.y;
 	
-	orb_publish(ORB_ID(vehicle_torque_command), pub_torque_comm , &torque_comm);
+	// orb_publish(ORB_ID(vehicle_torque_command), pub_torque_comm , &torque_comm);
 #ifdef H_INFI_WRAPPER_DEBUG 
 	dbg_tr.value = att_sp->thrust;
+	dbg_t_r.value = torque_out.r;
+	dbg_t_p.value = torque_out.p;
+	dbg_t_y.value = torque_out.p;
 	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_tr);
-
-		// warnx("Control: %llu usec",hrt_absolute_time()-start_time);
-		// warnx("meas_state %4.2f,\t%4.2f,\t%4.2f,\n", 
-		//       meas_state.r,
-		//       meas_state.p,
-		//       meas_state.y);
-		// warnx("meas_rate %4.2f,\t%4.2f,\t%4.2f,\n", 
-		//       meas_rate.r,
-		//       meas_rate.p,
-		//       meas_rate.y);
-		// warnx("att_set %4.2f,\t%4.2f,\t%4.2f,\n", 
-		//       set_state.r,
-		//       set_state.p,
-		//       set_state.y);
-		// warnx("rate set %4.2f,\t%4.2f,\t%4.2f,\n", 
-		//       set_rate.r,
-		//       set_rate.p,
-		//       set_rate.y);
-		// warnx("torque_out %4.2f,\t%4.2f,\t%4.2f,\n", 
-		//       torque_out.r,
-		//       torque_out.p,
-		//       torque_out.y);
+	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_r);
+	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_p);
+	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_y);
 #endif
 	struct body_torque_params body_t_p;
 	body_t_p.arm_length   = p.arm_length;
