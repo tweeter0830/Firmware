@@ -67,7 +67,20 @@
 #include "multirotor_attitude_control_h_infi.hpp"
 #include "body_torque_conversion.h"
 
-//#define H_INFI_WRAPPER_DEBUG 
+#include <uORB/uORB.h>
+#include <uORB/topics/vehicle_torque_command.h>
+
+#define H_INFI_WRAPPER_DEBUG 
+
+#ifdef H_INFI_WRAPPER_DEBUG
+#include <uORB/topics/debug_key_value.h>
+static struct debug_key_value_s dbg_tr;
+static orb_advert_t pub_dbg_tr;
+#endif
+
+ORB_DEFINE(vehicle_torque_command, struct vehicle_torque_command_s);
+static struct vehicle_torque_command_s torque_comm;
+static orb_advert_t pub_torque_comm;
 
 static Multirotor_Attitude_Control_H_Infi h_infi_controller;
 
@@ -166,8 +179,7 @@ void h_infi_wrapper(
 	struct actuator_controls_s                      *actuators,
 	bool						 control_pos,
 	bool						 control_yaw_pos, 
-	bool						 reset_integral,
-	bool                                             print_debug)
+	bool						 reset_integral)
 {
 	static uint64_t last_run = 0;
 	static uint64_t last_input = 0;
@@ -190,6 +202,19 @@ void h_infi_wrapper(
 
 		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
 		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
+
+#ifdef H_INFI_WRAPPER_DEBUG
+		strcpy(dbg_tr.key,  "Tr_com");
+
+		dbg_tr.value = 0.0f;
+
+		pub_dbg_tr = orb_advertise(ORB_ID(debug_key_value), &dbg_tr);
+#endif
+		torque_comm.roll = 0.0f;
+		torque_comm.pitch= 0.0f;
+		torque_comm.yaw  = 0.0f;
+		strcpy(torque_comm.key, "Tor_comm");
+		pub_torque_comm = orb_advertise(ORB_ID(vehicle_torque_command), &torque_comm);
 
 		initialized = true;
 	}
@@ -232,38 +257,41 @@ void h_infi_wrapper(
 	set_accel.y = 0.0f;
 	/* calculate current control outputs */
 	hrt_abstime start_time = 0;
-#ifdef H_INFI_WRAPPER_DEBUG
-	if( print_debug ){
-		start_time = hrt_absolute_time();
-	}
-#endif
+
 	h_infi_controller.set_setpoints(set_state,set_rate,set_accel);
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
 	h_infi_controller.control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
+
+	torque_comm.roll = torque_out.r;
+	torque_comm.pitch= torque_out.p;
+	torque_comm.yaw  = torque_out.y;
+	
+	orb_publish(ORB_ID(vehicle_torque_command), pub_torque_comm , &torque_comm);
 #ifdef H_INFI_WRAPPER_DEBUG 
-	if( print_debug ){
-		warnx("Control: %llu usec",hrt_absolute_time()-start_time);
-		warnx("meas_state %4.2f,\t%4.2f,\t%4.2f,\n", 
-		      meas_state.r,
-		      meas_state.p,
-		      meas_state.y);
-		warnx("meas_rate %4.2f,\t%4.2f,\t%4.2f,\n", 
-		      meas_rate.r,
-		      meas_rate.p,
-		      meas_rate.y);
-		warnx("att_set %4.2f,\t%4.2f,\t%4.2f,\n", 
-		      set_state.r,
-		      set_state.p,
-		      set_state.y);
-		warnx("rate set %4.2f,\t%4.2f,\t%4.2f,\n", 
-		      set_rate.r,
-		      set_rate.p,
-		      set_rate.y);
-		warnx("torque_out %4.2f,\t%4.2f,\t%4.2f,\n", 
-		      torque_out.r,
-		      torque_out.p,
-		      torque_out.y);
-	}
+	dbg_tr.value = att_sp->thrust;
+	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_tr);
+
+		// warnx("Control: %llu usec",hrt_absolute_time()-start_time);
+		// warnx("meas_state %4.2f,\t%4.2f,\t%4.2f,\n", 
+		//       meas_state.r,
+		//       meas_state.p,
+		//       meas_state.y);
+		// warnx("meas_rate %4.2f,\t%4.2f,\t%4.2f,\n", 
+		//       meas_rate.r,
+		//       meas_rate.p,
+		//       meas_rate.y);
+		// warnx("att_set %4.2f,\t%4.2f,\t%4.2f,\n", 
+		//       set_state.r,
+		//       set_state.p,
+		//       set_state.y);
+		// warnx("rate set %4.2f,\t%4.2f,\t%4.2f,\n", 
+		//       set_rate.r,
+		//       set_rate.p,
+		//       set_rate.y);
+		// warnx("torque_out %4.2f,\t%4.2f,\t%4.2f,\n", 
+		//       torque_out.r,
+		//       torque_out.p,
+		//       torque_out.y);
 #endif
 	struct body_torque_params body_t_p;
 	body_t_p.arm_length   = p.arm_length;
@@ -274,28 +302,14 @@ void h_infi_wrapper(
 	body_t.r  = torque_out.r;
 	body_t.p  = torque_out.p;
 	body_t.y  = torque_out.y;
-#ifdef H_INFI_WRAPPER_DEBUG 
-	if( print_debug ){
-		start_time = hrt_absolute_time();
-	}
-#endif
+
 	float pwm_fract[4];
         body_torque_to_pwm( &body_t,
 			    &body_t_p,
 			    att_sp->thrust,
 			    updated,
-			    pwm_fract,
-			    print_debug);
-#ifdef H_INFI_WRAPPER_DEBUG 
-	if( print_debug ){
-		warnx("pwm_fract: %2.3f,\t%2.3f,\t%2.3f,\t%2.3f\n",
-		      pwm_fract[0],
-		      pwm_fract[1],
-		      pwm_fract[2],
-		      pwm_fract[3]);
-		warnx("torque to pwm: %llu usec\n",hrt_absolute_time()-start_time);
-	}	
-#endif
+			    pwm_fract);
+
 	actuators->control[0] = pwm_fract[0];
 	actuators->control[1] = pwm_fract[1];
 	actuators->control[2] = pwm_fract[2];

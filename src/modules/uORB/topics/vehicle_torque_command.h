@@ -1,13 +1,7 @@
 /****************************************************************************
  *
  *   Copyright (C) 2012 PX4 Development Team. All rights reserved.
- *   Author: Jacob Huffman <jacobshuffman@gmail.com>
- *           Thomas Gubler <thomasgubler@student.ethz.ch>
- *           Julian Oes <joes@student.ethz.ch>
- *           Laurens Mackay <mackayl@student.ethz.ch>
- *           Tobias Naegeli <naegelit@student.ethz.ch>
- *           Martin Rutschmann <rutmarti@student.ethz.ch>
- *           Lorenz Meier <lm@inf.ethz.ch>
+ *   Author: @author Lorenz Meier <lm@inf.ethz.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,35 +32,47 @@
  *
  ****************************************************************************/
 
-/*
- * @file h_infi_warpper.h
- *
- * A wrapper for the PX4 to utilize a nonlinear h infinity controller
- *
- * @author Jacob Huffman <jacobshuffman@gmail.com>
- * @author Thomas Gubler <thomasgubler@student.ethz.ch>
- * @author Julian Oes <joes@student.ethz.ch>
- * @author Laurens Mackay <mackayl@student.ethz.ch>
- * @author Tobias Naegeli <naegelit@student.ethz.ch>
- * @author Martin Rutschmann <rutmarti@student.ethz.ch>
- * @author Lorenz Meier <lm@inf.ethz.ch>
+/**
+ * @file vehicle_torque_command.h
+ * Torque to be controlled to on multicopter. It's up to the implementation 
+ * to figure out how that translates to motor commands
  */
 
-#ifndef H_INFI_WRAPPER_H_
-#define H_INFI_WRAPPER_H_
+#ifndef TOPIC_VEHICLE_TORQUE_COMMAND_H_
+#define TOPIC_VEHICLE_TORQUE_COMMAND_H_
 
-#include <uORB/uORB.h>
-#include <uORB/topics/vehicle_attitude.h>
-#include <uORB/topics/vehicle_attitude_setpoint.h>
-#include <uORB/topics/vehicle_rates_setpoint.h>
-#include <uORB/topics/actuator_controls.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "../uORB.h"
 
-void h_infi_wrapper(
-	const struct vehicle_attitude_setpoint_s	*att_sp,
-	const struct vehicle_attitude_s			*att,
-	const struct vehicle_rates_setpoint_s		*rates_sp,
-	struct actuator_controls_s                      *actuators,
-	bool						 control_pos,
-	bool						 control_yaw, 
-	bool						 reset_integral);
-#endif /* MULTIROTOR_ATTITUDE_CONTROL_H_ */
+/**
+ * @addtogroup topics
+ * @{
+ */
+
+/**
+ * Key/value pair for debugging
+ */
+struct vehicle_torque_command_s {
+
+	/*
+	 * Actual data, this is specific to the type of data which is stored in this struct
+	 * A line containing L0GME will be added by the Python logging code generator to the
+	 * logged dataset.
+	 */
+	uint32_t timestamp_ms;		/**< in milliseconds since system start */
+	char key[10];				/**< max. 10 characters as key / name */
+	float roll;				/**< the value to send as debug output */
+	float pitch;
+	float yaw;
+
+};
+
+/**
+ * @}
+ */
+
+/* register this as object request broker structure */
+ORB_DECLARE(vehicle_torque_command);
+
+#endif

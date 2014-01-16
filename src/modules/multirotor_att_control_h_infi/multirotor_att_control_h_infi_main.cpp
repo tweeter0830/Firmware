@@ -79,8 +79,8 @@
 
 extern "C" __EXPORT int multirotor_att_control_h_infi_main(int argc, char *argv[]);
 
-#define H_INFI_DEBUGGING
-#define H_INFI_DEBUG_SKIP 2000
+//#define H_INFI_DEBUGGING
+//#define H_INFI_DEBUG_SKIP 2000
 
 static bool thread_should_exit;
 static int mc_task;
@@ -90,9 +90,7 @@ static const float yaw_deadzone = 0.01f;
 
 static int mc_thread_main(int argc, char *argv[])
 {
-#ifdef H_INFI_DEBUGGING
 	warnx("Starting h_infi main loop");
-#endif
 
 	/* declare and safely initialize all structs */
 	struct vehicle_attitude_s att;
@@ -149,24 +147,11 @@ static int mc_thread_main(int argc, char *argv[])
 	fds[0].events = POLLIN;
 
 	bool debug_loop = false;
-#ifdef H_INFI_DEBUGGING
-        unsigned long loop_count = 0;
-#endif
+
 	while (!thread_should_exit) {
-#ifdef H_INFI_DEBUGGING
-		loop_count++;
-		if( loop_count % H_INFI_DEBUG_SKIP == 0)
-			debug_loop = true;
-		else
-			debug_loop = false;
-#endif
 		/* wait for a sensor update, check for exit condition every 500 ms */
 		int ret = poll(fds, 1, 500);
 		
-#ifdef H_INFI_DEBUGGING
-		if ( debug_loop )
-			fprintf(stderr,"looping");
-#endif
 		if (ret < 0) {
 			/* poll error, count it in perf */
 			perf_count(mc_err_perf);
@@ -374,36 +359,9 @@ static int mc_thread_main(int argc, char *argv[])
 					&actuators,
 					control_mode.flag_control_attitude_enabled,
 					control_yaw_position,
-					reset_integral,
-					debug_loop);
+					reset_integral);
 				perf_end(mc_wrapper_interval);
-
-#ifdef H_INFI_DEBUGGING
-				if( debug_loop ){
-					perf_print_counter(mc_interval_perf);
-					perf_print_counter(mc_wrapper_interval);
-				}
-#endif 
-			} else {
-				/* rates controller disabled, set actuators to zero for safety */
-				actuators.control[0] = -1.0f;
-				actuators.control[1] = -1.0f;
-				actuators.control[2] = -1.0f;
-				actuators.control[3] = -1.0f;
 			}
-			/* fill in manual control values */
-			actuators.control[4] = manual.flaps;
-			actuators.control[5] = manual.aux1;
-			actuators.control[6] = manual.aux2;
-			actuators.control[7] = manual.aux3;
-#ifdef H_INFI_DEBUGGING
-			if (debug_loop){
-				for (int n=0 ; n<8 ; n++)
-				{
-					fprintf(stderr,"act(%d)%4.3f\n",n,actuators.control[n]);
-				}
-			}
-#endif
 			actuators.timestamp = hrt_absolute_time();
 			orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_pub, &actuators);
 

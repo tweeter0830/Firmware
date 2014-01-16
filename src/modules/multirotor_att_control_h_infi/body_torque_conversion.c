@@ -27,8 +27,8 @@ void body_torque_to_pwm(struct body_torque * torques,
 			struct body_torque_params * p,
 			float thrust,
 			bool updated,
-			float * pwm_fract,
-			bool debug_loop){
+			float * pwm_fract)
+{
 # ifdef BODY_TORQUE_DEBUG
 # ifdef __CC_ARM
 	print_ptr = &warnx; 

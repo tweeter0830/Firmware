@@ -27,8 +27,7 @@ void body_torque_to_pwm(struct body_torque * torques,
 			struct body_torque_params * p,
 			float thrust,
 			bool updated,
-			float * pwm_fract,
-			bool debug_loop);
+			float * pwm_fract);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
