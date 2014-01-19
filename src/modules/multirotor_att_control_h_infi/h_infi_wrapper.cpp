@@ -67,12 +67,10 @@
 #include "multirotor_attitude_control_h_infi.hpp"
 #include "body_torque_conversion.h"
 
-#include <uORB/uORB.h>
-//#include <uORB/topics/vehicle_torque_command.h>
-
 #define H_INFI_WRAPPER_DEBUG 
 
 #ifdef H_INFI_WRAPPER_DEBUG
+#include <uORB/uORB.h>
 #include <uORB/topics/debug_key_value.h>
 static struct debug_key_value_s dbg_tr;
 static struct debug_key_value_s dbg_t_r;
@@ -197,8 +195,8 @@ void h_infi_wrapper(
 	static struct mc_att_control_h_infi_params p;
 	static struct mc_att_control_h_infi_param_handles h;
 
-	static bool initialized = false;
 	/* initialize the controller when the function is called for the first time */
+	static bool initialized = false;
 	if (initialized == false) {
 		parameters_init(&h);
 		parameters_update(&h, &p);
@@ -219,9 +217,9 @@ void h_infi_wrapper(
 
 		pub_dbg_tr = orb_advertise(ORB_ID(debug_key_value), &dbg_tr);
 #endif
-		// torque_comm.roll = 0.0f;
-		// torque_comm.pitch= 0.0f;
-		// torque_comm.yaw  = 0.0f;
+		// torque_comm[0]oll = 0.0f;
+		// torque_comm[1]itch= 0.0f;
+		// torque_comm[2]aw  = 0.0f;
 		// strcpy(torque_comm.key, "Tor_comm");
 		// pub_torque_comm = orb_advertise(ORB_ID(vehicle_torque_command), &torque_comm);
 
@@ -242,62 +240,59 @@ void h_infi_wrapper(
 	if (reset_integral) {
 		h_infi_controller.reset_integrator();
 	}
-	Multirotor_Attitude_Control_H_Infi::State 
-		meas_state, 
-		meas_rate,
-		torque_out,
-		set_state,
-		set_rate,
-		set_accel;
-	meas_state.r = att->roll;
-	meas_state.p = att->pitch;
-	meas_state.y = att->yaw;
-	meas_rate.r = att->rollspeed;
-	meas_rate.p = att->pitchspeed;
-	meas_rate.y = att->yawspeed;
-	set_state.r = att_sp->roll_body;
-	set_state.p = att_sp->pitch_body;
-	set_state.y = att_sp->yaw_body;
-	set_rate.r = rates_sp->roll;
-	set_rate.p = rates_sp->pitch;
-	set_rate.y = rates_sp->yaw;
-	set_accel.r = 0.0f;
-	set_accel.p = 0.0f;
-	set_accel.y = 0.0f;
+	// Assign all the inputs/outputs for the controller
+	float meas_state[3], 
+		meas_rate[3],
+		torque_out[3],
+		set_state[3],
+		set_rate[3],
+		set_accel[3];
+	meas_state[0] = att->roll;
+	meas_state[1] = att->pitch;
+	meas_state[2] = att->yaw;
+	meas_rate[0] = att->rollspeed;
+	meas_rate[1] = att->pitchspeed;
+	meas_rate[2] = att->yawspeed;
+	set_state[0] = att_sp->roll_body;
+	set_state[1] = att_sp->pitch_body;
+	set_state[2] = att_sp->yaw_body;
+	set_rate[0] = rates_sp->roll;
+	set_rate[1] = rates_sp->pitch;
+	set_rate[2] = rates_sp->yaw;
+	set_accel[0] = 0.0f;
+	set_accel[1] = 0.0f;
+	set_accel[2] = 0.0f;
 	/* calculate current control outputs */
 	hrt_abstime start_time = 0;
 
 	h_infi_controller.set_setpoints(set_state,set_rate,set_accel);
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
-	h_infi_controller.control(meas_state, meas_rate, torque_out, last_run/1000000.0f);
+	h_infi_controller.control(meas_state, meas_rate, last_run/1000000.0f, torque_out);
 
-	// torque_comm.roll = torque_out.r;
-	// torque_comm.pitch= torque_out.p;
-	// torque_comm.yaw  = torque_out.y;
-	
 	// orb_publish(ORB_ID(vehicle_torque_command), pub_torque_comm , &torque_comm);
 #ifdef H_INFI_WRAPPER_DEBUG 
 	dbg_tr.value = att_sp->thrust;
-	dbg_t_r.value = torque_out.r;
-	dbg_t_p.value = torque_out.p;
-	dbg_t_y.value = torque_out.p;
-	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_tr);
-	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_r);
-	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_p);
-	orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_y);
+	dbg_t_r.value = torque_out[0];
+	dbg_t_p.value = torque_out[1];
+	dbg_t_y.value = torque_out[2];
+	int mod_val = motor_skip_counter % 4;
+	if( mod_val == 0 ){
+		orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_tr);
+	} else if( mod_val == 1 ){
+		orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_r);
+	} else if( mod_val == 2 ){
+		orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_p);
+	} else if( mod_val == 3 ){
+		orb_publish(ORB_ID(debug_key_value), pub_dbg_tr, &dbg_t_y);
+	};
 #endif
 	struct body_torque_params body_t_p;
 	body_t_p.arm_length   = p.arm_length;
 	body_t_p.forward_ang  = p.forward_ang;
 	body_t_p.torque_fract = p.torque_fract;
 
-	struct body_torque body_t;
-	body_t.r  = torque_out.r;
-	body_t.p  = torque_out.p;
-	body_t.y  = torque_out.y;
-
 	float pwm_fract[4];
-        body_torque_to_pwm( &body_t,
+        body_torque_to_pwm( torque_out,
 			    &body_t_p,
 			    att_sp->thrust,
 			    updated,

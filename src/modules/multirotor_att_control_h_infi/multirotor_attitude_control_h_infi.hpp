@@ -24,27 +24,19 @@ class __EXPORT Multirotor_Attitude_Control_H_Infi{ //__EXPORT
 public:
 	Multirotor_Attitude_Control_H_Infi();
         
-	struct State
-	{
-		//Body angles in radians
-		float r;
-		float p;
-		float y;
-
-		State():r(0.0f),p(0.0f),y(0.0f){};
-       	};
 	void set_phys_params(float Ixx, float Iyy, float Izz){
 		_Ixx = Ixx;
 		_Iyy = Iyy;
 		_Izz = Izz;
 	};
-	bool control(const State& meas_state, const State& meas_rate, State& torque_out, double time);
+	
+bool control(const float meas_state[], const float meas_rate[], double time, float torque_out[] );
 
 	void reset_integrator();
 
 	void set_mode(bool state_track, bool rate_track, bool accel_track, bool yaw_track);
 
-	void set_setpoints(const State& state,const State& rate,const State& accel);
+	void set_setpoints(const float state[],const float rate[],const float accel[]);
 
 	void set_weights(float w_deriv, float w_error, float w_int, float w_torque){
 		_weight_error_state = w_error;
@@ -61,9 +53,9 @@ public:
 	void set_weight_integral(float weight_in) {
 		_weight_error_integral = weight_in;
 	}
-	// void set_integrator_max(float max) {
-	// 	//_integrator_max = max;
-	// }
+	void set_integrator_max(float max) {
+		_int_sat = max;
+	}
 	// void set_max_rate(float max_rate) {
 	// 	//_max_rate = max_rate;
 	// }
@@ -89,10 +81,10 @@ private:
 	float _Ixx;
 	float _Iyy;
 	float _Izz;
-	State _setpoint_state;
-	State _setpoint_rate;
-	State _setpoint_accel;
-	float _command_torque [3];
+	float _setpoint_state[3];
+	float _setpoint_rate[3];
+	float _setpoint_accel[3];
+	float _command_torque[3];
 	bool _modes_set;
 	bool _state_track;
 	bool _rate_track;
@@ -104,13 +96,11 @@ private:
 	Matrix _M;
         Matrix _M_inv;
 	Matrix _Cor;
-	//Matrix _M;
-	//Matrix _M_inv;
-	//Matrix _Cor;
+
 	double _old_time;
 
 	void calc_gains(const Matrix& M,const Matrix& C, Matrix& k_p, Matrix& k_i, Matrix& k_d);
-	void make_M(const State& St, Matrix& M);
-	void make_C(const State& St, const State& Rate, Matrix& C);
+	void make_M(const float St[], Matrix& M);
+	void make_C(const float St[], const float Rate[], Matrix& C);
 };
 #endif // MULTIROTOR_ATTITUDE_CONTROL_H_INFI_H

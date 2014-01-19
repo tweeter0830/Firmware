@@ -7,12 +7,6 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct body_torque{
-	float r;
-	float p;
-	float y;
-};
-
 struct body_torque_params{
 	float arm_length;
 	float forward_ang;
@@ -23,8 +17,8 @@ struct body_torque_params{
 #ifdef __CC_ARM
 __EXPORT
 #endif
-void body_torque_to_pwm(struct body_torque * torques,
-			struct body_torque_params * p,
+void body_torque_to_pwm(const float torques[],
+			const struct body_torque_params * p,
 			float thrust,
 			bool updated,
 			float * pwm_fract);

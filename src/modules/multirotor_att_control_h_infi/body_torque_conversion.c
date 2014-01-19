@@ -1,20 +1,8 @@
 #include <math.h>
 #include <stdbool.h> 
 
-#ifdef __CC_ARM
-#include <systemlib/err.h>
-#else
-#include <stdio.h>
-#endif
-
 #include "body_torque_conversion.h"
 
-//#define BODY_TORQUE_DEBUG
-
-#ifdef BODY_TORQUE_DEBUG
-int (*print_ptr) (const char *str, ...);
-static void print_4by4_matrix(const float m[16]);
-#endif /* BODY_TORQUE_DEBUG */
 
 static void make_conversion_mat( const struct body_torque_params * p, float out_mat[16] );
 static float simple_interp(const float * x, const float * y, const int length, const float x0);
@@ -23,19 +11,11 @@ static bool invert_4by4_matrix(const float m[16], float invOut[16]);
 #ifdef __CC_ARM
 __EXPORT 
 #endif
-void body_torque_to_pwm(struct body_torque * torques,
-			struct body_torque_params * p,
+void body_torque_to_pwm(const float torques[],
+			const struct body_torque_params * p,
 			float thrust,
 			bool updated,
-			float * pwm_fract)
-{
-# ifdef BODY_TORQUE_DEBUG
-# ifdef __CC_ARM
-	print_ptr = &warnx; 
-# else
-	print_ptr = &printf; 
-# endif
-# endif
+			float * pwm_fract){
 	static float pwm_val[]    = { 950,1000,1050,1100,1150,1200,1250,1350,1450,1550,1650,1750,1850,1900};
 	static float thrust_val[] = {0.03f,0.21f,0.45f,0.73f,1.06f,1.39f,1.82f,2.85f,4.05f,5.40f,6.65f,7.69f,8.05f,8.35f};
 	static int table_length = 14;
@@ -48,24 +28,17 @@ void body_torque_to_pwm(struct body_torque * torques,
 	if( updated || !initialized ){
 		make_conversion_mat( p, motor_to_body);
 		zero_det = invert_4by4_matrix(motor_to_body, body_to_motor);
-# ifdef BODY_TORQUE_DEBUG
-		if( !zero_det ){
-			(*print_ptr) ("Zero determinant\n");
-			(*print_ptr) ("%f\t%f\t%f\n",
-				      p->arm_length, p->forward_ang, p->torque_fract);
-		}
-# endif
 		initialized = true;
 	}
 	if( thrust < 0.0f )
 		thrust = 0;
 	
 	float rot_thrust[4] = {0};
-	rot_thrust[0] = torques->p*body_to_motor[0]+torques->r*body_to_motor[1]+torques->y*body_to_motor[2]+thrust*body_to_motor[3];
-	rot_thrust[1] = torques->p*body_to_motor[4]+torques->r*body_to_motor[5]+torques->y*body_to_motor[6]+thrust*body_to_motor[7];
- 	rot_thrust[2] = torques->p*body_to_motor[8]+torques->r*body_to_motor[9]+torques->y*body_to_motor[10]+thrust*body_to_motor[11];
-	rot_thrust[3] = torques->p*body_to_motor[12]+torques->r*body_to_motor[13]+torques->y*body_to_motor[14]+thrust*body_to_motor[15];
-	
+	rot_thrust[0] = torques[1]*body_to_motor[0]+torques[0]*body_to_motor[1]+torques[2]*body_to_motor[2]+thrust*body_to_motor[3];
+	rot_thrust[1] = torques[1]*body_to_motor[4]+torques[0]*body_to_motor[5]+torques[2]*body_to_motor[6]+thrust*body_to_motor[7];
+ 	rot_thrust[2] = torques[1]*body_to_motor[8]+torques[0]*body_to_motor[9]+torques[2]*body_to_motor[10]+thrust*body_to_motor[11];
+	rot_thrust[3] = torques[1]*body_to_motor[12]+torques[0]*body_to_motor[13]+torques[2]*body_to_motor[14]+thrust*body_to_motor[15];
+	// Find the min and max of the thrusts
 	float min = rot_thrust[0];
 	float max = rot_thrust[0];
 	for( int i = 1 ; i<4 ; i++){
@@ -74,13 +47,7 @@ void body_torque_to_pwm(struct body_torque * torques,
 		if( rot_thrust[i] > max ) 
 			max = rot_thrust[i];
 	}
-#ifdef BODY_TORQUE_DEBUG
-	if( debug_loop ){
-		(*print_ptr) ("old_thrust:\n");
-		(*print_ptr) ("[%4.2f\t%4.2f\t%4.2f\t%4.2f]\n",
-			      rot_thrust[0], rot_thrust[1], rot_thrust[2], rot_thrust[3]);
-	}
-#endif
+	// lock ratio of thrusts while correcting for thrusts that are too high/low
 	if( min < 0 ){
 		for( int i = 0 ; i<4 ; i++)
 			rot_thrust[i] -= min;
@@ -89,33 +56,12 @@ void body_torque_to_pwm(struct body_torque * torques,
 		for( int i = 0 ; i<4 ; i++)
 			rot_thrust[i] -= over;
 	}
+	// use interpolation to convert from thrust to -1 to 1 commands
 	float rot_high_time[4] = {0};
 	for( int i = 0; i<4; i++ ){
 		rot_high_time[i] = simple_interp(thrust_val, pwm_val, table_length, rot_thrust[i]);
 		pwm_fract[i] = ( rot_high_time[i]-pwm_val[0] )/( pwm_val[table_length-1]-pwm_val[0] ) * 2.0f - 1.0f;
 	}
-#ifdef BODY_TORQUE_DEBUG
-	if (debug_loop){
-		if (initialized)
-			(*print_ptr) ("Initialized\n");
-		else 
-			(*print_ptr) ("Not Initialized\n");
-		/* (*print_ptr) ("motor_to_body:\n"); */
-		/* print_4by4_matrix(motor_to_body); */
-		/* (*print_ptr) ("body_to_motor:\n"); */
-		/* print_4by4_matrix(body_to_motor); */
-		(*print_ptr) ("rot_thrust:\n");
-		(*print_ptr) ("[%4.2f\t%4.2f\t%4.2f\t%4.2f]\n",
-		      rot_thrust[0], rot_thrust[1], rot_thrust[2], rot_thrust[3]);
-		(*print_ptr) ("rot_high_time:\n");
-		(*print_ptr) ("[%4.2f\t%4.2f\t%4.2f\t%4.2f]\n",
-		      rot_high_time[0], rot_high_time[1], rot_high_time[2], rot_high_time[3]);
-		(*print_ptr) ("pwm_fract:\n");
-		(*print_ptr) ("Test test:\n");
-		(*print_ptr) ("[%4.2f\t%4.2f\t%4.2f\t%4.2f]\n",
-		      pwm_fract[0], pwm_fract[1], pwm_fract[2], pwm_fract[3]);
-	}
-#endif
 }
 
 static void make_conversion_mat( const struct body_torque_params * p, float out_mat[16] ){
@@ -293,12 +239,3 @@ static bool invert_4by4_matrix(const float m[16], float invOut[16])
 
     return true;
 }
-
-#ifdef BODY_TORQUE_DEBUG
-static void print_4by4_matrix(const float m[16]){
-	for (int i = 0 ; i < 4 ; i++){
-		(*print_ptr) ("Row:%d, [%4.3f\t%4.3f\t%4.3f\t%4.3f]\n",
-		      i, m[i*4], m[i*4+1], m[i*4+2], m[i*4+3]);
-	}
-}
-#endif
