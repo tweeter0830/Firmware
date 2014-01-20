@@ -232,6 +232,7 @@ void h_infi_wrapper(
 		parameters_update(&h, &p);
 		
 		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
+		h_infi_controller.set_integrator_max(p.integral_max);
 		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
 		updated = true;
 	}

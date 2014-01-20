@@ -79,8 +79,8 @@ MODULES		+= modules/position_estimator_inav
 #
 # Vehicle Control
 #
-MODULES		+= modules/fw_pos_control_l1
-MODULES		+= modules/fw_att_control
+#MODULES		+= modules/fw_pos_control_l1
+#MODULES		+= modules/fw_att_control
 MODULES		+= modules/multirotor_att_control
 MODULES		+= modules/multirotor_att_control_h_infi
 MODULES		+= modules/multirotor_pos_control

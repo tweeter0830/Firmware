@@ -53,9 +53,15 @@ set_mode(bool state_track, bool rate_track, bool accel_track, bool yaw_track){
 }
 void Multirotor_Attitude_Control_H_Infi::
 set_setpoints(const float state[],const float rate[],const float accel[]) {
-	memcpy(_setpoint_state, state, 3*sizeof(float));
-	memcpy(_setpoint_rate, rate, 3*sizeof(float));
-	memcpy(_setpoint_accel, accel, 3*sizeof(float));
+	_setpoint_state[0] = state[0];
+	_setpoint_state[1] = state[1];
+	_setpoint_state[2] = state[2];
+	_setpoint_rate[0] = rate[0];
+	_setpoint_rate[1] = rate[1];
+	_setpoint_rate[2] = rate[2];
+	_setpoint_accel[0] = accel[0];
+	_setpoint_accel[1] = accel[1];
+	_setpoint_accel[2] = accel[2];
 }
 
 bool Multirotor_Attitude_Control_H_Infi::
@@ -127,7 +133,7 @@ control(const float meas_state[], const float meas_rate[], double time, float to
 #endif
 	torque_out[0] = control_torque(0);
 	torque_out[1] = control_torque(1);
-	torque_out[3] = control_torque(2);
+	torque_out[2] = control_torque(2);
 	_old_time = time;
 	return true;
 }
@@ -192,29 +198,29 @@ make_C(const float St[], const float Rate[], Matrix& C){
 	float c_ph=cos(St[0]);
 	float s_th=sin(St[1]);
 	float c_th=cos(St[1]);
-	float long_factor = Rate[1]*c_ph*s_ph + Rate[3]*s_ph*s_ph*c_th;
+	float long_factor = Rate[1]*c_ph*s_ph + Rate[2]*s_ph*s_ph*c_th;
 	//First Row
 	C(0,0)=0;
 	C(0,1)=(_Iyy-_Izz)*(long_factor) + 
-		     (_Izz-_Iyy)*Rate[3]*c_ph*c_ph*c_th -
-		     _Ixx*Rate[3]*c_th;
-	C(0,2)=(_Izz-_Iyy)*Rate[3]*c_ph*s_ph*c_th*c_th;
+		     (_Izz-_Iyy)*Rate[2]*c_ph*c_ph*c_th -
+		     _Ixx*Rate[2]*c_th;
+	C(0,2)=(_Izz-_Iyy)*Rate[2]*c_ph*s_ph*c_th*c_th;
 	//Second Row
 	C(1,0)=(_Izz-_Iyy)*(long_factor) + 
-	             (_Iyy-_Izz)*Rate[3]*c_ph*c_ph*c_th +
-		     _Ixx*Rate[3]*c_th;
+	             (_Iyy-_Izz)*Rate[2]*c_ph*c_ph*c_th +
+		     _Ixx*Rate[2]*c_th;
 	C(1,1)=(_Izz-_Iyy)*Rate[0]*c_ph*c_ph;
-	C(1,2)=-_Ixx*Rate[3]*s_th*c_th +
-		      _Iyy*Rate[3]*s_ph*s_ph*c_th*s_th +
-		      _Izz*Rate[3]*c_ph*c_ph*s_th*c_th;
+	C(1,2)=-_Ixx*Rate[2]*s_th*c_th +
+		      _Iyy*Rate[2]*s_ph*s_ph*c_th*s_th +
+		      _Izz*Rate[2]*c_ph*c_ph*s_th*c_th;
 	//Third Row
-	C(2,0)=(_Iyy-_Izz)*Rate[3]*c_th*c_th*s_ph*c_ph - 
+	C(2,0)=(_Iyy-_Izz)*Rate[2]*c_th*c_th*s_ph*c_ph - 
 		     _Ixx*Rate[1]*c_th;
 	C(2,1)=(_Izz-_Iyy)*(Rate[1]*c_ph*s_ph*s_th+Rate[0]*s_ph*s_ph*c_th) +
 		     (_Iyy-_Izz)*Rate[0]*c_ph*c_ph*c_th + 
-		     _Ixx*Rate[3]*s_th*c_th - 
-		     _Iyy*Rate[3]*s_ph*s_ph*s_th*c_th - 
-		     _Izz*Rate[3]*c_ph*c_ph*s_th*c_th;
+		     _Ixx*Rate[2]*s_th*c_th - 
+		     _Iyy*Rate[2]*s_ph*s_ph*s_th*c_th - 
+		     _Izz*Rate[2]*c_ph*c_ph*s_th*c_th;
 	C(2,2)=(_Iyy-_Izz)*Rate[0]*c_ph*s_ph*c_th*c_th - 
 		     _Iyy*Rate[1]*s_ph*s_ph*c_th*s_th - 
 		     _Izz*Rate[1]*c_ph*c_ph*c_th*s_th + 
