@@ -441,7 +441,7 @@ int multirotor_att_control_h_infi_main(int argc, char *argv[])
 		mc_task = task_spawn_cmd("multirotor_att_control_h_infi",
 					 SCHED_DEFAULT,
 					 SCHED_PRIORITY_MAX - 15,
-					 2048,
+					 4096,
 					 mc_thread_main,
 					 NULL);
 		exit(0);
