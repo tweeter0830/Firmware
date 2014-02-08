@@ -147,7 +147,8 @@ static int mc_thread_main(int argc, char *argv[])
 	fds[0].events = POLLIN;
 
 	bool debug_loop = false;
-
+	hrt_abstime last_run_time = 0;
+	float wait_time = 8500;
 	while (!thread_should_exit) {
 		/* wait for a sensor update, check for exit condition every 500 ms */
 		int ret = poll(fds, 1, 500);
@@ -339,33 +340,37 @@ static int mc_thread_main(int argc, char *argv[])
 			/* check if we should we reset integrals */
 			bool reset_integral = !control_mode.flag_armed || att_sp.thrust < 0.1f;	// TODO use landed status instead of throttle
 			
-			/* measure in what intervals the controller runs */
-			perf_count(mc_interval_perf);
+			hrt_abstime current_time = hrt_absolute_time();
+			if( current_time - last_run_time > wait_time ){
+				last_run_time = current_time;
 			
-			/* run rates controller if needed */
-			if (control_mode.flag_control_rates_enabled ) {
-				/* get current rate setpoint */
-				bool rates_sp_updated = false;
-				orb_check(vehicle_rates_setpoint_sub, &rates_sp_updated);
-				if (rates_sp_updated) {
-					orb_copy(ORB_ID(vehicle_rates_setpoint), vehicle_rates_setpoint_sub, &rates_sp);
+				/* measure in what intervals the controller runs */
+				perf_count(mc_interval_perf);
+				/* run rates controller if needed */
+				if (control_mode.flag_control_rates_enabled ) {
+					/* get current rate setpoint */
+					bool rates_sp_updated = false;
+					orb_check(vehicle_rates_setpoint_sub, &rates_sp_updated);
+					if (rates_sp_updated) {
+						orb_copy(ORB_ID(vehicle_rates_setpoint), vehicle_rates_setpoint_sub, &rates_sp);
+					}
+					perf_begin(mc_wrapper_interval);
+					/* run the actual control logic */
+					h_infi_wrapper(
+						&att_sp,
+						&att,
+						&rates_sp,
+						&actuators,
+						control_mode.flag_control_attitude_enabled,
+						control_yaw_position,
+						reset_integral);
+					perf_end(mc_wrapper_interval);
 				}
-				perf_begin(mc_wrapper_interval);
-				/* run the actual control logic */
-				h_infi_wrapper(
-					&att_sp,
-					&att,
-					&rates_sp,
-					&actuators,
-					control_mode.flag_control_attitude_enabled,
-					control_yaw_position,
-					reset_integral);
-				perf_end(mc_wrapper_interval);
+				actuators.timestamp = hrt_absolute_time();
+				orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_pub, &actuators);
+				
+				perf_end(mc_loop_perf);
 			}
-			actuators.timestamp = hrt_absolute_time();
-			orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_pub, &actuators);
-
-			perf_end(mc_loop_perf);
 		}
 	}
 

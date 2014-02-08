@@ -96,6 +96,9 @@ struct mc_att_control_h_infi_params {
 	float Izz;
 	/* XX Implement this */
 	float integral_max;
+	float tor_p_max;
+	float tor_r_max;
+	float tor_y_max;
 
 	float arm_length;
 	float forward_ang;
@@ -113,6 +116,9 @@ struct mc_att_control_h_infi_param_handles {
 	param_t Izz;
 
 	param_t integral_max;
+	param_t tor_p_max;
+	param_t tor_r_max;
+	param_t tor_y_max;
 
 	param_t arm_length;
 	param_t forward_ang;
@@ -145,6 +151,9 @@ static int parameters_init(struct mc_att_control_h_infi_param_handles *h)
 	h->Izz  	= 	param_find("MC_H_IZZ");	   
 	/* Integral parameters */	                   
 	h->integral_max =	param_find("MC_H_INT_MAX");
+	h->tor_p_max    =       param_find("MC_H_TOR_P_MAX");
+	h->tor_r_max    =       param_find("MC_H_TOR_R_MAX");
+	h->tor_y_max    =       param_find("MC_H_TOR_Y_MAX");
 
 	/* torque to pwm parameters */
 	h->arm_length  =        param_find("MC_T_ARM_LENGTH");
@@ -165,6 +174,9 @@ static int parameters_update(const struct mc_att_control_h_infi_param_handles *h
 	param_get(h->Izz, &(p->Izz));
 
 	param_get(h->integral_max, &(p->integral_max));
+	param_get(h->tor_p_max   , &(p->tor_p_max   ));
+	param_get(h->tor_r_max   , &(p->tor_r_max   ));
+	param_get(h->tor_y_max   , &(p->tor_y_max   ));
 
 	param_get(h->arm_length  , &(p->arm_length));
 	param_get(h->forward_ang , &(p->forward_ang));
@@ -233,6 +245,7 @@ void h_infi_wrapper(
 		
 		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
 		h_infi_controller.set_integrator_max(p.integral_max);
+		h_infi_controller.set_max_moments(p.tor_r_max, p.tor_p_max, p.tor_y_max);
 		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
 		updated = true;
 	}

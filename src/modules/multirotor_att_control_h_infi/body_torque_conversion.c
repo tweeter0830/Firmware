@@ -4,7 +4,7 @@
 #include "body_torque_conversion.h"
 
 
-static void make_conversion_mat( const struct body_torque_params * p, float out_mat[16] );
+static void make_conversion_mat( const struct body_torque_params * p, float out_mat[16]);
 static float simple_interp(const float * x, const float * y, const int length, const float x0);
 static bool invert_4by4_matrix(const float m[16], float invOut[16]);
 
@@ -26,13 +26,14 @@ void body_torque_to_pwm(const float torques[],
 	static float motor_to_body[16] = {0};
 	bool zero_det = false;
 	if( updated || !initialized ){
-		make_conversion_mat( p, motor_to_body);
+		make_conversion_mat( p, motor_to_body );
 		zero_det = invert_4by4_matrix(motor_to_body, body_to_motor);
 		initialized = true;
 	}
 	if( thrust < 0.0f )
 		thrust = 0;
 	
+	thrust = thrust*thrust_val[table_length-1]*4;
 	float rot_thrust[4] = {0};
 	rot_thrust[0] = torques[1]*body_to_motor[0]+torques[0]*body_to_motor[1]+torques[2]*body_to_motor[2]+thrust*body_to_motor[3];
 	rot_thrust[1] = torques[1]*body_to_motor[4]+torques[0]*body_to_motor[5]+torques[2]*body_to_motor[6]+thrust*body_to_motor[7];

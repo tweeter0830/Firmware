@@ -30,7 +30,7 @@ public:
 		_Izz = Izz;
 	};
 	
-bool control(const float meas_state[], const float meas_rate[], double time, float torque_out[] );
+	bool control(const float meas_state[], const float meas_rate[], double time, float torque_out[] );
 
 	void reset_integrator();
 
@@ -55,6 +55,11 @@ bool control(const float meas_state[], const float meas_rate[], double time, flo
 	}
 	void set_integrator_max(float max) {
 		_int_sat = max;
+	}
+	void set_max_moments(float r_max, float p_max, float y_max){
+		_max_p = p_max;
+		_max_r = r_max;
+		_max_y = y_max;
 	}
 	// void set_max_rate(float max_rate) {
 	// 	//_max_rate = max_rate;
@@ -91,6 +96,10 @@ private:
 	bool _accel_track;
 	bool _yaw_track;
 	float _int_sat;
+
+	float _max_p;
+	float _max_r;
+	float _max_y;
 
         Vector _integral;
 	Matrix _M;

@@ -41,6 +41,9 @@ Multirotor_Attitude_Control_H_Infi() :
 	_integral(1)	       = 0.0f;
 	_integral(2)	       = 0.0f;
 	_int_sat	       = 10.0f;
+	_max_p                 = 1.0f;
+	_max_r                 = 1.0f;
+	_max_y                 = 0.5f;
 }
 
 void Multirotor_Attitude_Control_H_Infi::
@@ -113,27 +116,35 @@ control(const float meas_state[], const float meas_rate[], double time, float to
 	std::cout << "error_rate " << error_rate << std::endl;
 	std::cout << "setpoint_accel " << setpoint_accel << std::endl;
 #endif
-	_integral = _integral + error_state*dt;
+	Vector control_accel = k_d*error_rate + k_p*error_state - k_i*_integral;
+	Vector control_torque = _M*setpoint_accel + _Cor*meas_rate_vect - _M*control_accel;
+	float sat_vals[3] = {_max_r, _max_p, _max_y};
+	for( int i = 0; i < 3; i++){
+		float cur_val = control_torque(i);
+		if( cur_val < -sat_vals[i] || sat_vals[i] < cur_val ){
+			int sign = (cur_val > 0) - (cur_val < 0);
+			control_torque(i) = sat_vals[i]*sign;
+		}else{
+			_integral(i) = _integral(i) + error_state(i)*dt;
+			if( _integral(i) > _int_sat )
+				_integral(i) = _int_sat;
+			else if( _integral(i) < -_int_sat )
+				_integral(i) = -_int_sat;
+		}	
+	}
 	if( !_yaw_track ){
 		_integral(2) = 0;
 	}
-	for( int i = 0; i < 3; i++ ){
-		if( _integral(i) > _int_sat )
-			_integral(i) = _int_sat;
-		else if( _integral(i) < -_int_sat )
-			_integral(i) = -_int_sat;
-	}
-	Vector control_accel = k_d*error_rate + k_p*error_state - k_i*_integral;
-	Vector control_torque = _M*setpoint_accel + _Cor*meas_rate_vect - _M*control_accel;
+
 #ifdef H_INFI_CORE_DEBUG
 	std::cout << "Time Diff: " << dt << std::endl;
 	std::cout << "_integral " << _integral << std::endl;
 	std::cout << "control_accel " << control_accel << std::endl;
 	std::cout << "control_torque "<< control_torque<< std::endl;
 #endif
-	torque_out[0] = control_torque(0);
-	torque_out[1] = control_torque(1);
-	torque_out[2] = control_torque(2);
+	torque_out[0] = control_torque(0); //roll
+	torque_out[1] = control_torque(1); //pitch
+	torque_out[2] = control_torque(2); //yaw
 	_old_time = time;
 	return true;
 }
