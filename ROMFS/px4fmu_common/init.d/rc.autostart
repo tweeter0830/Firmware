@@ -23,7 +23,7 @@
 
 if param compare SYS_AUTOSTART 1000
 then
-	#sh /etc/init.d/1000_rc_fw_easystar.hil		
+	sh /etc/init.d/1000_rc_fw_easystar.hil
 fi
 
 if param compare SYS_AUTOSTART 1001
@@ -186,10 +186,19 @@ then
 fi
 
 #
+# Hexa Coaxial
+#
+
+if param compare SYS_AUTOSTART 11001
+then
+	sh /etc/init.d/11001_hexa_cox
+fi
+
+#
 # Octo Coaxial
 #
 
 if param compare SYS_AUTOSTART 12001
 then
-	sh /etc/init.d/12001_octo_cox_pwm
+	sh /etc/init.d/12001_octo_cox
 fi
