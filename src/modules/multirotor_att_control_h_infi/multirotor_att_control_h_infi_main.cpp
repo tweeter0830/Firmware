@@ -338,8 +338,8 @@ static int mc_thread_main(int argc, char *argv[])
 			}
 
 			/* check if we should we reset integrals */
-			bool reset_integral = !control_mode.flag_armed || att_sp.thrust < 0.1f;	// TODO use landed status instead of throttle
-			
+			//bool reset_integral = !control_mode.flag_armed || att_sp.thrust < 0.1f;	// TODO use landed status instead of throttle
+			bool reset_integral = false; //Testing hack
 			hrt_abstime current_time = hrt_absolute_time();
 			if( current_time - last_run_time > wait_time ){
 				last_run_time = current_time;
