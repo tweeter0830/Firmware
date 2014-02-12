@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,61 +32,31 @@
  ****************************************************************************/
 
 /**
- * @file rc_calibration.cpp
- * Remote Control calibration routine
+ * @file drv_device.h
+ *
+ * Generic device / sensor interface.
  */
 
-#include "rc_calibration.h"
-#include "commander_helper.h"
+#ifndef _DRV_DEVICE_H
+#define _DRV_DEVICE_H
 
-#include <poll.h>
-#include <unistd.h>
-#include <uORB/topics/sensor_combined.h>
-#include <uORB/topics/manual_control_setpoint.h>
-#include <mavlink/mavlink_log.h>
-#include <systemlib/param/param.h>
-#include <systemlib/err.h>
+#include <stdint.h>
+#include <sys/ioctl.h>
 
-/* oddly, ERROR is not defined for c++ */
-#ifdef ERROR
-# undef ERROR
-#endif
-static const int ERROR = -1;
+#include "drv_sensor.h"
+#include "drv_orb_dev.h"
 
-int do_trim_calibration(int mavlink_fd)
-{
-	int sub_man = orb_subscribe(ORB_ID(manual_control_setpoint));
-	usleep(200000);
-	struct manual_control_setpoint_s sp;
-	bool changed;
-	orb_check(sub_man, &changed);
+/*
+ * ioctl() definitions
+ */
 
-	if (!changed) {
-		mavlink_log_critical(mavlink_fd, "no inputs, aborting");
-		return ERROR;
-	}
+#define _DEVICEIOCBASE		(0x100)
+#define _DEVICEIOC(_n)		(_IOC(_DEVICEIOCBASE, _n))
 
-	orb_copy(ORB_ID(manual_control_setpoint), sub_man, &sp);
+/** ask device to stop publishing */
+#define DEVIOCSPUBBLOCK	_DEVICEIOC(0)
 
-	/* set parameters */
-	float p = sp.roll;
-	param_set(param_find("TRIM_ROLL"), &p);
-	p = sp.pitch;
-	param_set(param_find("TRIM_PITCH"), &p);
-	p = sp.yaw;
-	param_set(param_find("TRIM_YAW"), &p);
+/** check publication block status */
+#define DEVIOCGPUBBLOCK	_DEVICEIOC(1)
 
-	/* store to permanent storage */
-	/* auto-save */
-	int save_ret = param_save_default();
-
-	if (save_ret != 0) {
-		mavlink_log_critical(mavlink_fd, "TRIM: SAVE FAIL");
-		close(sub_man);
-		return ERROR;
-	}
-
-	mavlink_log_info(mavlink_fd, "trim cal done");
-	close(sub_man);
-	return OK;
-}
+#endif /* _DRV_DEVICE_H */
