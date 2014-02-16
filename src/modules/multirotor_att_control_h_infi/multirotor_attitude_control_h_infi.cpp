@@ -2,10 +2,17 @@
 #include <math.h>
 #include <float.h>
 #include <stdio.h>
+#include <stdlib.h> 
 
 #include "multirotor_attitude_control_h_infi.hpp"
 
 // #define H_INFI_CORE_DEBUG
+
+#ifndef RT_RIF
+#define RT_PIF	3.1415927F
+#endif 
+
+static float angle_error( float ref, float meas);
 
 Multirotor_Attitude_Control_H_Infi::
 Multirotor_Attitude_Control_H_Infi() : 
@@ -82,17 +89,20 @@ control(const float meas_state[], const float meas_rate[], double time, float to
 	calc_gains(_M,_Cor, k_p, k_i, k_d);
 	Vector error_state;
 	if( _state_track ){
-		error_state(0) = meas_state[0]-_setpoint_state[0];
-		error_state(1) = meas_state[1]-_setpoint_state[1];
-		error_state(2) = meas_state[2]-_setpoint_state[2];
+		error_state(0) = angle_error( _setpoint_state[0], meas_state[0]);
+		error_state(1) = angle_error( _setpoint_state[1], meas_state[1]);
+		error_state(2) = angle_error( _setpoint_state[2], meas_state[2]);
 	}else{
 		error_state.setAll(0.0f);
 	}
+	if( !_yaw_track ){
+		error_state(2)=0;
+	}
 	Vector error_rate;
 	if( _rate_track ) {
-		error_rate(0) = meas_rate[0]-_setpoint_rate[0];
-		error_rate(1) = meas_rate[1]-_setpoint_rate[1];
-		error_rate(2) = meas_rate[2]-_setpoint_rate[2];
+		error_rate(0) = angle_error( _setpoint_rate[0], meas_rate[0]);
+		error_rate(1) = angle_error( _setpoint_rate[1], meas_rate[1]);
+		error_rate(2) = angle_error( _setpoint_rate[2], meas_rate[2]);
 	} else {
 		error_rate.setAll(0.0f);
 	}
@@ -104,19 +114,16 @@ control(const float meas_state[], const float meas_rate[], double time, float to
 	} else {
 		setpoint_accel.setAll(0.0f);
 	}
-	if( !_yaw_track ){
-		error_state(2)=0;
-	}
 	Vector meas_rate_vect;
-	meas_rate_vect(0)=meas_state[0];
-	meas_rate_vect(1)=meas_state[1];
-	meas_rate_vect(2)=meas_state[2];
+	meas_rate_vect(0)=meas_rate[0];
+	meas_rate_vect(1)=meas_rate[1];
+	meas_rate_vect(2)=meas_rate[2];
 #ifdef H_INFI_CORE_DEBUG
 	std::cout << "error_state " << error_state << std::endl;
 	std::cout << "error_rate " << error_rate << std::endl;
 	std::cout << "setpoint_accel " << setpoint_accel << std::endl;
 #endif
-	Vector control_accel = k_d*error_rate + k_p*error_state - k_i*_integral;
+	Vector control_accel = k_d*error_rate + k_p*error_state + k_i*_integral;
 	Vector control_torque = _M*setpoint_accel + _Cor*meas_rate_vect - _M*control_accel;
 	float sat_vals[3] = {_max_r, _max_p, _max_y};
 	for( int i = 0; i < 3; i++){
@@ -126,12 +133,13 @@ control(const float meas_state[], const float meas_rate[], double time, float to
 			control_torque(i) = sat_vals[i]*sign;
 		}else{
 			_integral(i) = _integral(i) + error_state(i)*dt;
-			if( _integral(i) > _int_sat )
-				_integral(i) = _int_sat;
-			else if( _integral(i) < -_int_sat )
-				_integral(i) = -_int_sat;
-		}	
+		}
+		if( _integral(i) > _int_sat )
+		        _integral(i) = _int_sat;
+		else if( _integral(i) < -_int_sat )
+		        _integral(i) = -_int_sat;
 	}
+	//control_torque(2) = _integral(1); //DEBUG HACK
 	if( !_yaw_track ){
 		_integral(2) = 0;
 	}
@@ -209,6 +217,12 @@ make_C(const float St[], const float Rate[], Matrix& C){
 	float c_ph=cos(St[0]);
 	float s_th=sin(St[1]);
 	float c_th=cos(St[1]);
+	// theta -> Pitch
+	// phi -> roll
+	// lamba -> yaw
+	// state[0] = roll
+	// state[1] = pitch
+	// state[2] = yaw
 	float long_factor = Rate[1]*c_ph*s_ph + Rate[2]*s_ph*s_ph*c_th;
 	//First Row
 	C(0,0)=0;
@@ -249,3 +263,11 @@ reset_integrator()
 	_integral(2)=0.0f;
 }
 
+static float angle_error( float ref, float meas){
+	if(  abs( meas-ref) <= RT_PIF )
+		return  meas-ref;
+	else if( meas > ref)
+		return -RT_PIF*2 + meas - ref;
+	else //ref > meas
+		return RT_PIF*2 + meas - ref;
+}

@@ -194,19 +194,12 @@ void h_infi_wrapper(
 	bool						 control_yaw_pos, 
 	bool						 reset_integral)
 {
-	static uint64_t last_run = 0;
-	static uint64_t last_input = 0;
-	last_run = hrt_absolute_time();
-
-	if (last_input != att_sp->timestamp) {
-		last_input = att_sp->timestamp;
-	}
-
 	static int motor_skip_counter = 0;
 	
 	static struct mc_att_control_h_infi_params p;
 	static struct mc_att_control_h_infi_param_handles h;
 
+	uint64_t current_time = hrt_absolute_time();
 	/* initialize the controller when the function is called for the first time */
 	static bool initialized = false;
 	if (initialized == false) {
@@ -214,8 +207,10 @@ void h_infi_wrapper(
 		parameters_update(&h, &p);
 
 		h_infi_controller.set_phys_params(p.Ixx, p.Iyy, p.Izz);
-		h_infi_controller.set_weights(p.w_rate, p.w_position, p.w_integral, p.w_control);
-
+		h_infi_controller.set_weights(p.w_rate, 
+					      p.w_position, 
+					      p.w_integral, 
+					      p.w_control);
 #ifdef H_INFI_WRAPPER_DEBUG
 		strcpy(dbg_tr.key,  "Tr_com");
 		strcpy(dbg_t_r.key, "T_r");
@@ -229,12 +224,6 @@ void h_infi_wrapper(
 
 		pub_dbg_tr = orb_advertise(ORB_ID(debug_key_value), &dbg_tr);
 #endif
-		// torque_comm[0]oll = 0.0f;
-		// torque_comm[1]itch= 0.0f;
-		// torque_comm[2]aw  = 0.0f;
-		// strcpy(torque_comm.key, "Tor_comm");
-		// pub_torque_comm = orb_advertise(ORB_ID(vehicle_torque_command), &torque_comm);
-
 		initialized = true;
 	}
 	bool updated = false;
@@ -281,9 +270,11 @@ void h_infi_wrapper(
 
 	h_infi_controller.set_setpoints(set_state,set_rate,set_accel);
 	h_infi_controller.set_mode(control_pos, true, true, control_yaw_pos);
-	h_infi_controller.control(meas_state, meas_rate, last_run/1000000.0f, torque_out);
+	h_infi_controller.control(meas_state, 
+				  meas_rate, 
+				  current_time/1000000.0f, 
+				  torque_out);
 
-	// orb_publish(ORB_ID(vehicle_torque_command), pub_torque_comm , &torque_comm);
 #ifdef H_INFI_WRAPPER_DEBUG 
 	dbg_tr.value = att_sp->thrust;
 	dbg_t_r.value = torque_out[0];
