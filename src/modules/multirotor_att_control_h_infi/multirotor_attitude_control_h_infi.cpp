@@ -129,8 +129,13 @@ control(const float meas_state[], const float meas_rate[], double time, float to
 	for( int i = 0; i < 3; i++){
 		float cur_val = control_torque(i);
 		if( cur_val < -sat_vals[i] || sat_vals[i] < cur_val ){
-			int sign = (cur_val > 0) - (cur_val < 0);
-			control_torque(i) = sat_vals[i]*sign;
+			int sign_c = (cur_val > 0) - (cur_val < 0);
+			int sign_i = (_integral(i) > 0) - (_integral(i) < 0);
+			int sign_er= (error_state(i) > 0) - (error_state(i) < 0);
+			control_torque(i) = sat_vals[i]*sign_c;
+			if( sign_i != sign_er){
+				_integral(i) = _integral(i) + error_state(i)*dt;
+			}
 		}else{
 			_integral(i) = _integral(i) + error_state(i)*dt;
 		}
