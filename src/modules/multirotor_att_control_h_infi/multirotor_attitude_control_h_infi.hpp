@@ -10,7 +10,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <mathlib/mathlib.h>
+#include <math/Matrix.hpp>
+#include <math/Vector3.hpp>
 
 typedef math::Matrix  Matrix;
 typedef math::Vector3  Vector;

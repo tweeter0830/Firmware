@@ -144,7 +144,7 @@ control(const float meas_state[], const float meas_rate[], double time, float to
 		else if( _integral(i) < -_int_sat )
 		        _integral(i) = -_int_sat;
 	}
-	//control_torque(2) = _integral(1); //DEBUG HACK
+	// control_torque(2) = _integral(1); //DEBUG HACK
 	if( !_yaw_track ){
 		_integral(2) = 0;
 	}
